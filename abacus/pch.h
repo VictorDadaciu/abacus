@@ -11,8 +11,12 @@
 #undef main
 #include "SDL_vulkan.h"
 
+//glm
+#include "glm.hpp"
+
 //std
 #include <stdio.h>
 #include <string>
+#include <memory>
 
 #endif //PCH_H
