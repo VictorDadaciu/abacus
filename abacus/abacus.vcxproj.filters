@@ -12,6 +12,9 @@
     <Filter Include="src\pch">
       <UniqueIdentifier>{f04f3f1d-2c37-4716-8df1-88e16135a541}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\sdk">
+      <UniqueIdentifier>{65670434-ea31-4473-808f-c6f75d285f31}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="abacus.cpp">
@@ -20,10 +23,22 @@
     <ClCompile Include="pch.cpp">
       <Filter>src\pch</Filter>
     </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>src\pch</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>src\sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>src\sdk</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

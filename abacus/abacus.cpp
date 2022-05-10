@@ -1,34 +1,27 @@
 #include "pch.h"
+
+#include "Application.h"
+
 #include <iostream>
+
+using namespace abc;
 
 int main(int argc, char* argv[])
 {
-    SDL_Init(SDL_INIT_EVERYTHING);
-    SDL_Window* window = SDL_CreateWindow(
-        "abacus",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        800,
-        600,
-        SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN
-    );
-
-    SDL_Event e;
-    bool running = true;
-    while (running)
+    try
     {
-        while (SDL_PollEvent(&e))
+        APP->Start();
+        while (APP->IsRunning())
         {
-            if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
-            {
-                running = false;
-            }
+            APP->Update();
         }
+        APP->Quit();
+    } 
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << "\n";
+        return EXIT_FAILURE;
     }
 
-    SDL_DestroyWindow(window);
-    window = NULL;
-    SDL_Quit();
-
-    return 0;
+    return EXIT_SUCCESS;
 }

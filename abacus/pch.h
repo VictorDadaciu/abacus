@@ -18,5 +18,8 @@
 #include <stdio.h>
 #include <string>
 #include <memory>
+#include <stdexcept>
+#include <cstdlib>
+#include <vector>
 
 #endif //PCH_H
