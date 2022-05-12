@@ -21,5 +21,12 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <set>
+#include <cstdint> 
+#include <limits> 
+#include <algorithm> 
 
 #endif //PCH_H

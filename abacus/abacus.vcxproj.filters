@@ -17,9 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="abacus.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>src\pch</Filter>
     </ClCompile>
@@ -27,6 +24,15 @@
       <Filter>src\sdk</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="abacus.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="Device.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="Swapchain.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,6 +44,12 @@
       <Filter>src\sdk</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
+      <Filter>src\sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>src\sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="Swapchain.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
   </ItemGroup>
