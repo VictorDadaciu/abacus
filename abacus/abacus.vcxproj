@@ -159,31 +159,21 @@ $(SolutionDir)shaders\spirv.bat</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="abacus.cpp" />
-    <ClCompile Include="sdk\vlk\Framebuffer.cpp" />
-    <ClCompile Include="sdk\vlk\RenderPass.cpp" />
     <ClCompile Include="utils\FileReader.cpp" />
     <ClCompile Include="sdk\Application.cpp" />
-    <ClCompile Include="sdk\vlk\Device.cpp" />
     <ClCompile Include="utils\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="sdk\vlk\Pipeline.cpp" />
     <ClCompile Include="sdk\vlk\Renderer.cpp" />
-    <ClCompile Include="sdk\vlk\Swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sdk\vlk\Framebuffer.h" />
-    <ClInclude Include="sdk\vlk\RenderPass.h" />
     <ClInclude Include="utils\FileReader.h" />
     <ClInclude Include="sdk\Application.h" />
-    <ClInclude Include="sdk\vlk\Device.h" />
     <ClInclude Include="utils\pch.h" />
-    <ClInclude Include="sdk\vlk\Pipeline.h" />
     <ClInclude Include="sdk\vlk\Renderer.h" />
-    <ClInclude Include="sdk\vlk\Swapchain.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\spirv.bat" />

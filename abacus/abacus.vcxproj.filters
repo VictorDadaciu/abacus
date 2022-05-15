@@ -32,22 +32,7 @@
     <ClCompile Include="abacus.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\vlk\Device.cpp">
-      <Filter>src\sdk</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vlk\Swapchain.cpp">
-      <Filter>src\sdk</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vlk\Pipeline.cpp">
-      <Filter>src\sdk</Filter>
-    </ClCompile>
     <ClCompile Include="utils\FileReader.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vlk\RenderPass.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vlk\Framebuffer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -61,18 +46,7 @@
     <ClInclude Include="sdk\vlk\Renderer.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="sdk\vlk\Device.h">
-      <Filter>src\sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\vlk\Swapchain.h">
-      <Filter>src\sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\vlk\Pipeline.h">
-      <Filter>src\sdk</Filter>
-    </ClInclude>
     <ClInclude Include="utils\FileReader.h" />
-    <ClInclude Include="sdk\vlk\RenderPass.h" />
-    <ClInclude Include="sdk\vlk\Framebuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.vert">

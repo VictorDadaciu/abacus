@@ -14,9 +14,9 @@ namespace abc
 
 	struct SwapChainSupportDetails
 	{
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
+		VkSurfaceCapabilitiesKHR capabilities{};
+		std::vector<VkSurfaceFormatKHR> formats{};
+		std::vector<VkPresentModeKHR> presentModes{};
 	};
 
 	VkResult CreateDebugUtilsMessengerEXT(
@@ -32,11 +32,6 @@ namespace abc
 		const VkAllocationCallbacks* pAllocator
 	);
 
-	class Framebuffer;
-	class RenderPass;
-	class Pipeline;
-	class Swapchain;
-	class Device;
 	class Application;
 	class Renderer
 	{
@@ -44,11 +39,6 @@ namespace abc
 		Renderer(Application* app);
 		
 		//getters
-		const VkInstance& Instance() const { return m_vk; }
-		const VkSurfaceKHR& GetSurface() const { return m_surface; }
-		const Device* GetDevice() const { return m_device; }
-		const Swapchain* GetSwapchain() const { return m_swapchain; }
-		const RenderPass* GetRenderPass() const { return m_renderPass; }
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
 		void WindowResized() { m_framebufferResized = true; }
 
@@ -56,9 +46,6 @@ namespace abc
 		void WaitForDeviceToIdle();
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
-
-		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
-		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice);
 
 		void Destroy();
 
@@ -84,15 +71,47 @@ namespace abc
 		const bool m_enableValidationLayers = true;
 #endif
 
+		struct Device
+		{
+			VkPhysicalDevice physical{};
+			VkDevice logical{};
+
+			const std::vector<const char*> deviceExtensions = {
+				VK_KHR_SWAPCHAIN_EXTENSION_NAME
+			};
+
+			VkQueue graphicsQueue{};
+			VkQueue presentQueue{};
+		};
+
+		struct Swapchain
+		{
+			VkSwapchainKHR sc{};
+			std::vector<VkImage> images{};
+			std::vector<VkImageView> imageViews{};
+			VkFormat imageFormat{};
+			VkExtent2D extent{};
+		};
+
+		struct Pipeline
+		{
+			std::vector<char> vertCode{};
+			std::vector<char> fragCode{};
+			VkShaderModule vertModule{};
+			VkShaderModule fragModule{};
+			VkPipelineLayout layout{};
+			VkPipeline pl{};
+		};
+
 		//variables
 		Application* m_app{};
 		VkInstance m_vk{};
 		VkSurfaceKHR m_surface{};
-		Device* m_device{};
-		Swapchain* m_swapchain{};
-		RenderPass* m_renderPass{};
-		Pipeline* m_graphicsPipeline{};
-		std::vector<Framebuffer*> m_framebuffers{};
+		Device m_device{};
+		Swapchain m_swapchain{};
+		VkRenderPass m_renderPass{};
+		Pipeline m_graphicsPipeline{};
+		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
@@ -112,9 +131,25 @@ namespace abc
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 		void SetupDebugMessenger();
 		void CreateSurface();
+		void PickPhysicalDevice();
+		bool IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice);
+		bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
+		void CreateLogicalDevice();
+		void CreateSwapchain();
+		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		void CreateImageViews();
+		void CreateRenderPass();
+		void CreatePipeline();
+		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
+
+		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
+		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice);
 
 		void RecreateSwapchain();
 		void CleanupSwapchain();
