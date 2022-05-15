@@ -38,7 +38,7 @@ namespace abc
 		void Quit();
 
 		Window* GetActiveWindow() const { return m_activeWindow; }
-	private:
+	protected:
 		static Application* st_instance;
 		Renderer* m_renderer;
 

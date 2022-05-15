@@ -15,42 +15,74 @@
     <Filter Include="src\sdk">
       <UniqueIdentifier>{65670434-ea31-4473-808f-c6f75d285f31}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\shaders">
+      <UniqueIdentifier>{1b478cb0-e7ab-487b-85a5-87cee914982c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="utils\pch.cpp">
       <Filter>src\pch</Filter>
     </ClCompile>
-    <ClCompile Include="Application.cpp">
+    <ClCompile Include="sdk\Application.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
+    <ClCompile Include="sdk\vlk\Renderer.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
     <ClCompile Include="abacus.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="Device.cpp">
+    <ClCompile Include="sdk\vlk\Device.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="Swapchain.cpp">
+    <ClCompile Include="sdk\vlk\Swapchain.cpp">
       <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\vlk\Pipeline.cpp">
+      <Filter>src\sdk</Filter>
+    </ClCompile>
+    <ClCompile Include="utils\FileReader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\vlk\RenderPass.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\vlk\Framebuffer.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="utils\pch.h">
       <Filter>src\pch</Filter>
     </ClInclude>
-    <ClInclude Include="Application.h">
+    <ClInclude Include="sdk\Application.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.h">
+    <ClInclude Include="sdk\vlk\Renderer.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="Device.h">
+    <ClInclude Include="sdk\vlk\Device.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="Swapchain.h">
+    <ClInclude Include="sdk\vlk\Swapchain.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
+    <ClInclude Include="sdk\vlk\Pipeline.h">
+      <Filter>src\sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="utils\FileReader.h" />
+    <ClInclude Include="sdk\vlk\RenderPass.h" />
+    <ClInclude Include="sdk\vlk\Framebuffer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\triangle.vert">
+      <Filter>src\shaders</Filter>
+    </None>
+    <None Include="shaders\triangle.frag">
+      <Filter>src\shaders</Filter>
+    </None>
+    <None Include="shaders\spirv.bat">
+      <Filter>src\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

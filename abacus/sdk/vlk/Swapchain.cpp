@@ -19,7 +19,7 @@ namespace abc
 
 	void Swapchain::Destroy()
 	{
-		for (auto imageView : m_swapchainImageViews)
+		for (auto imageView : m_imageViews)
 		{
 			vkDestroyImageView(m_renderer->GetDevice()->GetLogical(), imageView, nullptr);
 		}
@@ -126,24 +126,24 @@ namespace abc
 		}
 
 		vkGetSwapchainImagesKHR(m_renderer->GetDevice()->GetLogical(), m_swapchain, &imageCount, nullptr);
-		m_swapchainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_renderer->GetDevice()->GetLogical(), m_swapchain, &imageCount, m_swapchainImages.data());
+		m_images.resize(imageCount);
+		vkGetSwapchainImagesKHR(m_renderer->GetDevice()->GetLogical(), m_swapchain, &imageCount, m_images.data());
 
-		m_swapchainImageFormat = surfaceFormat.format;
-		m_swapchainExtent = extent;
+		m_imageFormat = surfaceFormat.format;
+		m_extent = extent;
 	}
 
 	void Swapchain::CreateImageViews()
 	{
-		m_swapchainImageViews.resize(m_swapchainImages.size());
+		m_imageViews.resize(m_images.size());
 
-		for (size_t i = 0; i < m_swapchainImages.size(); i++)
+		for (size_t i = 0; i < m_images.size(); i++)
 		{
 			VkImageViewCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = m_swapchainImages[i];
+			createInfo.image = m_images[i];
 			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = m_swapchainImageFormat;
+			createInfo.format = m_imageFormat;
 			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -154,9 +154,9 @@ namespace abc
 			createInfo.subresourceRange.baseArrayLayer = 0;
 			createInfo.subresourceRange.layerCount = 1; 
 			
-			if (vkCreateImageView(m_renderer->GetDevice()->GetLogical(), &createInfo, nullptr, &m_swapchainImageViews[i]) != VK_SUCCESS)
+			if (vkCreateImageView(m_renderer->GetDevice()->GetLogical(), &createInfo, nullptr, &m_imageViews[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("Failed to create image views!");
+				throw std::runtime_error("Failed to create swapchain image views!");
 			}
 		}
 	}

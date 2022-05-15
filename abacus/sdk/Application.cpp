@@ -15,7 +15,7 @@ namespace abc
             SDL_WINDOWPOS_CENTERED,
             m_width,
             m_height,
-            SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN
+            SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
         );
 	}
 
@@ -56,11 +56,21 @@ namespace abc
             {
                 m_running = false;
             }
+            else if (e.type == SDL_WINDOWEVENT)
+            {
+                if (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                {
+                    m_renderer->WindowResized();
+                }
+            }
         }
+        m_renderer->DrawFrame();
     }
 
     void Application::Quit()
     {
+        m_renderer->WaitForDeviceToIdle();
+
         m_renderer->Destroy();
         delete m_renderer;
 

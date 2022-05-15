@@ -2,8 +2,6 @@
 
 #include "Application.h"
 
-#include <iostream>
-
 using namespace abc;
 
 int main(int argc, char* argv[])
