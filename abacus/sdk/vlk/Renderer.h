@@ -32,6 +32,39 @@ namespace abc
 		const VkAllocationCallbacks* pAllocator
 	);
 
+	struct Device
+	{
+		VkPhysicalDevice physical{};
+		VkDevice logical{};
+
+		const std::vector<const char*> deviceExtensions = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		};
+
+		VkQueue graphicsQueue{};
+		VkQueue presentQueue{};
+	};
+
+	struct Swapchain
+	{
+		VkSwapchainKHR sc{};
+		std::vector<VkImage> images{};
+		std::vector<VkImageView> imageViews{};
+		VkFormat imageFormat{};
+		VkExtent2D extent{};
+	};
+
+	struct Pipeline
+	{
+		std::vector<char> vertCode{};
+		std::vector<char> fragCode{};
+		VkShaderModule vertModule{};
+		VkShaderModule fragModule{};
+		VkPipelineLayout layout{};
+		VkPipeline pl{};
+	};
+
+	class VertexBuffer;
 	class Application;
 	class Renderer
 	{
@@ -71,38 +104,6 @@ namespace abc
 		const bool m_enableValidationLayers = true;
 #endif
 
-		struct Device
-		{
-			VkPhysicalDevice physical{};
-			VkDevice logical{};
-
-			const std::vector<const char*> deviceExtensions = {
-				VK_KHR_SWAPCHAIN_EXTENSION_NAME
-			};
-
-			VkQueue graphicsQueue{};
-			VkQueue presentQueue{};
-		};
-
-		struct Swapchain
-		{
-			VkSwapchainKHR sc{};
-			std::vector<VkImage> images{};
-			std::vector<VkImageView> imageViews{};
-			VkFormat imageFormat{};
-			VkExtent2D extent{};
-		};
-
-		struct Pipeline
-		{
-			std::vector<char> vertCode{};
-			std::vector<char> fragCode{};
-			VkShaderModule vertModule{};
-			VkShaderModule fragModule{};
-			VkPipelineLayout layout{};
-			VkPipeline pl{};
-		};
-
 		//variables
 		Application* m_app{};
 		VkInstance m_vk{};
@@ -113,6 +114,8 @@ namespace abc
 		Pipeline m_graphicsPipeline{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
+		VertexBuffer* m_vertexBuffer{};
+		VertexBuffer* m_indexBuffer{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		std::vector<VkSemaphore> m_imageAvailableSemaphores{};
@@ -145,6 +148,8 @@ namespace abc
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 		void CreateFramebuffers();
 		void CreateCommandPool();
+		void CreateVertexBuffer();
+		void CreateIndexBuffer();
 		void CreateCommandBuffers();
 		void CreateSyncObjects();
 

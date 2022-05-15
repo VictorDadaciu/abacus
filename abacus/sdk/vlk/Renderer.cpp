@@ -2,6 +2,7 @@
 #include "Renderer.h"
 
 #include "Application.h"
+#include "VertexBuffer.h"
 
 #include "FileReader.h"
 
@@ -21,6 +22,8 @@ namespace abc
 		CreatePipeline();
 		CreateFramebuffers();
 		CreateCommandPool();
+		CreateVertexBuffer();
+		CreateIndexBuffer();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -381,7 +384,15 @@ namespace abc
 		vertexInputInfo.vertexBindingDescriptionCount = 0;
 		vertexInputInfo.pVertexBindingDescriptions = nullptr;
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		vertexInputInfo.pVertexAttributeDescriptions = nullptr; 
+		
+		auto bindingDescription = Vertex::GetBindingDescription();
+		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -543,6 +554,16 @@ namespace abc
 		}
 	}
 
+	void Renderer::CreateVertexBuffer()
+	{
+		m_vertexBuffer = new VertexBuffer(m_commandPool, m_device, BufferType::VERTEX);
+	}
+
+	void Renderer::CreateIndexBuffer()
+	{
+		m_indexBuffer = new VertexBuffer(m_commandPool, m_device, BufferType::INDEX);
+	}
+
 	void Renderer::CreateCommandBuffers()
 	{
 		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -583,7 +604,11 @@ namespace abc
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.pl);
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		VkBuffer vertexBuffers[] = { m_vertexBuffer->dataBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->dataBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_indexBuffer->indices.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -739,6 +764,12 @@ namespace abc
 			vkDestroySemaphore(m_device.logical, m_imageAvailableSemaphores[i], nullptr);
 			vkDestroyFence(m_device.logical, m_inFlightFences[i], nullptr);
 		}
+
+		m_vertexBuffer->Destroy(m_device.logical);
+		delete m_vertexBuffer;
+
+		m_indexBuffer->Destroy(m_device.logical);
+		delete m_indexBuffer;
 
 		vkDestroyCommandPool(m_device.logical, m_commandPool, nullptr);
 		CleanupSwapchain();

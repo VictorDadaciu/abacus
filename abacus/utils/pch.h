@@ -29,5 +29,6 @@
 #include <limits> 
 #include <algorithm> 
 #include <fstream>
+#include <array>
 
 #endif //PCH_H
