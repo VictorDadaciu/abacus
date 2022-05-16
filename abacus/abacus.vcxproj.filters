@@ -35,7 +35,7 @@
     <ClCompile Include="utils\FileReader.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\vlk\VertexBuffer.cpp">
+    <ClCompile Include="sdk\vlk\Buffer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,7 +50,7 @@
       <Filter>src\sdk</Filter>
     </ClInclude>
     <ClInclude Include="utils\FileReader.h" />
-    <ClInclude Include="sdk\vlk\VertexBuffer.h" />
+    <ClInclude Include="sdk\vlk\Buffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangle.vert">

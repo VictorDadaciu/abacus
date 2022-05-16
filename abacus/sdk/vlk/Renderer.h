@@ -64,7 +64,23 @@ namespace abc
 		VkPipeline pl{};
 	};
 
-	class VertexBuffer;
+	struct Vertex
+	{
+		glm::vec2 pos;
+		glm::vec3 color;
+
+		static VkVertexInputBindingDescription GetBindingDescription();
+		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions();
+	};
+
+	struct UniformBufferObject
+	{
+		alignas(16) glm::mat4 model;
+		alignas(16) glm::mat4 view;
+		alignas(16) glm::mat4 proj;
+	};
+
+	class Buffer;
 	class Application;
 	class Renderer
 	{
@@ -75,8 +91,16 @@ namespace abc
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
 		void WindowResized() { m_framebufferResized = true; }
 
+		void UpdateUniformBuffer(uint32_t currentImage);
 		void DrawFrame();
 		void WaitForDeviceToIdle();
+
+		void CreateVertexBuffer();
+		void CreateIndexBuffer();
+		void CreateUniformBuffers();
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		void CreateCommandBuffers();
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
 
@@ -94,7 +118,7 @@ namespace abc
 			"VK_LAYER_KHRONOS_validation",
 		};
 
-		const int MAX_FRAMES_IN_FLIGHT = 2;
+		const int MAX_FRAMES_IN_FLIGHT = 3;
 
 	protected:
 
@@ -111,11 +135,16 @@ namespace abc
 		Device m_device{};
 		Swapchain m_swapchain{};
 		VkRenderPass m_renderPass{};
+		VkDescriptorSetLayout m_descriptorSetLayout;
 		Pipeline m_graphicsPipeline{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
-		VertexBuffer* m_vertexBuffer{};
-		VertexBuffer* m_indexBuffer{};
+		Buffer* m_vertexBuffer{};
+		Buffer* m_indexBuffer{};
+		std::vector<VkBuffer> m_uniformBuffers{};
+		std::vector<VkDeviceMemory> m_uniformBuffersMemory{};
+		VkDescriptorPool m_descriptorPool{};
+		std::vector<VkDescriptorSet> m_descriptorSets{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		std::vector<VkSemaphore> m_imageAvailableSemaphores{};
@@ -126,6 +155,17 @@ namespace abc
 		bool m_framebufferResized = false;
 
 		VkDebugUtilsMessengerEXT m_debugMessenger{};
+
+		const std::vector<Vertex> vertices = {
+			{{-0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}},
+			{{0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}},
+			{{0.5f, 0.5f}, {0.1f, 0.1f, 0.98f}},
+			{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+		};
+
+		const std::vector<uint16_t> indices = {
+			0, 1, 2, 2, 3, 0
+		};
 
 		// inits
 		void CreateInstance();
@@ -144,17 +184,18 @@ namespace abc
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 		void CreateImageViews();
 		void CreateRenderPass();
+		void CreateDescriptorSetLayout();
+		void CreateDescriptorPool();
+		void CreateDescriptorSets();
 		void CreatePipeline();
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 		void CreateFramebuffers();
 		void CreateCommandPool();
-		void CreateVertexBuffer();
-		void CreateIndexBuffer();
-		void CreateCommandBuffers();
 		void CreateSyncObjects();
 
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice);
+		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 		void RecreateSwapchain();
 		void CleanupSwapchain();

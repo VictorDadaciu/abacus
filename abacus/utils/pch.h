@@ -12,7 +12,10 @@
 #include "SDL_vulkan.h"
 
 //glm
-#include "glm.hpp"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
 
 //std
 #include <stdio.h>

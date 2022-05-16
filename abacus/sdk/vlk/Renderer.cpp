@@ -2,9 +2,11 @@
 #include "Renderer.h"
 
 #include "Application.h"
-#include "VertexBuffer.h"
+#include "Buffer.h"
 
 #include "FileReader.h"
+
+#include <chrono>
 
 namespace abc
 {
@@ -19,11 +21,15 @@ namespace abc
 		CreateSwapchain();
 		CreateImageViews();
 		CreateRenderPass();
+		CreateDescriptorSetLayout();
 		CreatePipeline();
 		CreateFramebuffers();
 		CreateCommandPool();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
+		CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -427,7 +433,7 @@ namespace abc
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -465,8 +471,8 @@ namespace abc
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0; // Optional
-		pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+		pipelineLayoutInfo.setLayoutCount = 1; // Optional
+		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout; // Optional
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -496,6 +502,26 @@ namespace abc
 		if (vkCreateGraphicsPipelines(m_device.logical, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline.pl) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create pipeline!");
+		}
+	}
+
+	void Renderer::CreateDescriptorSetLayout()
+	{
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(m_device.logical, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create descriptor set layout!");
 		}
 	}
 
@@ -554,14 +580,150 @@ namespace abc
 		}
 	}
 
+	VkVertexInputBindingDescription Vertex::GetBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescription;
+	}
+
+	std::array<VkVertexInputAttributeDescription, 2> Vertex::GetAttributeDescriptions()
+	{
+		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+		return attributeDescriptions;
+	}
+
 	void Renderer::CreateVertexBuffer()
 	{
-		m_vertexBuffer = new VertexBuffer(m_commandPool, m_device, BufferType::VERTEX);
+		VkBuffer vertexBuffer{};
+		VkDeviceMemory vertexMemory{};
+		VkBuffer stagingBuffer{};
+		VkDeviceMemory stagingMemory{};
+
+		VkDeviceSize bufferSize;
+		bufferSize = sizeof(vertices[0]) * vertices.size();
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+
+		void* data;
+		vkMapMemory(m_device.logical, stagingMemory, 0, bufferSize, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(m_device.logical, stagingMemory);
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexMemory);
+		CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+		vkDestroyBuffer(m_device.logical, stagingBuffer, nullptr);
+		vkFreeMemory(m_device.logical, stagingMemory, nullptr);
+
+		m_vertexBuffer = new Buffer(vertexBuffer, vertexMemory, BufferType::VERTEX);
 	}
 
 	void Renderer::CreateIndexBuffer()
 	{
-		m_indexBuffer = new VertexBuffer(m_commandPool, m_device, BufferType::INDEX);
+		VkBuffer indexBuffer{};
+		VkDeviceMemory indexMemory{};
+		VkBuffer stagingBuffer{};
+		VkDeviceMemory stagingMemory{};
+
+		VkDeviceSize bufferSize;
+		bufferSize = sizeof(indices[0]) * indices.size();
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+
+		void* data;
+		vkMapMemory(m_device.logical, stagingMemory, 0, bufferSize, 0, &data);
+		memcpy(data, indices.data(), (size_t)bufferSize);
+		vkUnmapMemory(m_device.logical, stagingMemory);
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexMemory);
+		CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+		vkDestroyBuffer(m_device.logical, stagingBuffer, nullptr);
+		vkFreeMemory(m_device.logical, stagingMemory, nullptr);
+
+		m_indexBuffer = new Buffer(indexBuffer, indexMemory, BufferType::INDEX);
+	}
+
+	void Renderer::CreateUniformBuffers()
+	{
+		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+		m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+		}
+	}
+
+	void Renderer::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+		if (vkCreateDescriptorPool(m_device.logical, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create descriptor pool!");
+		}
+	}
+
+	void Renderer::CreateDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_descriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		if (vkAllocateDescriptorSets(m_device.logical, &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate descriptor sets!");
+		}
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_uniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = m_descriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = nullptr; // Optional
+			descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+			vkUpdateDescriptorSets(m_device.logical, 1, &descriptorWrite, 0, nullptr);
+		}
 	}
 
 	void Renderer::CreateCommandBuffers()
@@ -604,11 +766,12 @@ namespace abc
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.pl);
-		VkBuffer vertexBuffers[] = { m_vertexBuffer->dataBuffer };
+		VkBuffer vertexBuffers[] = { m_vertexBuffer->GetBuffer() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->dataBuffer, 0, VK_INDEX_TYPE_UINT16);
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_indexBuffer->indices.size()), 1, 0, 0, 0);
+		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -641,6 +804,105 @@ namespace abc
 		}
 	}
 
+	uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_device.physical, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+
+		throw std::runtime_error("Failed to find suitable memory type!");
+	}
+
+	void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_device.logical, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create vertex buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_device.logical, buffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+		if (vkAllocateMemory(m_device.logical, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate vertex buffer memory!");
+		}
+
+		vkBindBufferMemory(m_device.logical, buffer, bufferMemory, 0);
+	}
+
+	void Renderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = m_commandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(m_device.logical, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion{};
+		copyRegion.srcOffset = 0; // Optional
+		copyRegion.dstOffset = 0; // Optional
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+		vkEndCommandBuffer(commandBuffer);
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(m_device.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_device.graphicsQueue);
+
+		vkFreeCommandBuffers(m_device.logical, m_commandPool, 1, &commandBuffer);
+	}
+
+	void Renderer::UpdateUniformBuffer(uint32_t currentImage)
+	{
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		UniformBufferObject ubo{};
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(90.0f), m_swapchain.extent.width / (float)m_swapchain.extent.height, 0.1f, 1000.0f);
+		ubo.proj[1][1] *= -1;
+
+		void* data;
+		vkMapMemory(m_device.logical, m_uniformBuffersMemory[m_currentFrame], 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(m_device.logical, m_uniformBuffersMemory[m_currentFrame]);
+	}
+
 	void Renderer::DrawFrame()
 	{
 		vkWaitForFences(m_device.logical, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
@@ -657,6 +919,8 @@ namespace abc
 		{
 			throw std::runtime_error("Failed to acquire swapchain image!");
 		}
+
+		UpdateUniformBuffer(m_currentFrame);
 
 		vkResetFences(m_device.logical, 1, &m_inFlightFences[m_currentFrame]);
 
@@ -773,6 +1037,17 @@ namespace abc
 
 		vkDestroyCommandPool(m_device.logical, m_commandPool, nullptr);
 		CleanupSwapchain();
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroyBuffer(m_device.logical, m_uniformBuffers[i], nullptr);
+			vkFreeMemory(m_device.logical, m_uniformBuffersMemory[i], nullptr);
+		}
+
+		vkDestroyDescriptorPool(m_device.logical, m_descriptorPool, nullptr);
+
+		vkDestroyDescriptorSetLayout(m_device.logical, m_descriptorSetLayout, nullptr);
+
 		vkDestroyDevice(m_device.logical, nullptr);
 
 		if (m_enableValidationLayers)
