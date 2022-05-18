@@ -5,14 +5,14 @@
 
 namespace abc
 {
-	Component::Component(GameObject* gameObject, ComponentType type) :
-		m_gameObject(gameObject), m_type(type)
+	Component::Component(GameObject* go, ComponentType t) :
+		gameObject(go), type(t)
 	{
-		if (!m_gameObject)
+		if (!gameObject)
 		{
 			throw std::runtime_error("Component cannot be unattached!");
 		}
-		m_gameObject->AttachComponent(this);
+		gameObject->AttachComponent(this);
 	}
 
 	Component::~Component()
