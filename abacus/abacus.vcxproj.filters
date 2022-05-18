@@ -20,7 +20,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="utils\pch.cpp">
+    <ClCompile Include="utl\pch.cpp">
       <Filter>src\pch</Filter>
     </ClCompile>
     <ClCompile Include="sdk\Application.cpp">
@@ -32,7 +32,7 @@
     <ClCompile Include="abacus.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="utils\FileReader.cpp">
+    <ClCompile Include="utl\FileReader.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="sdk\vlk\Buffer.cpp">
@@ -40,7 +40,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="utils\pch.h">
+    <ClInclude Include="utl\pch.h">
       <Filter>src\pch</Filter>
     </ClInclude>
     <ClInclude Include="sdk\Application.h">
@@ -49,18 +49,27 @@
     <ClInclude Include="sdk\vlk\GraphicsRenderer.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="utils\FileReader.h" />
+    <ClInclude Include="utl\FileReader.h" />
     <ClInclude Include="sdk\vlk\Buffer.h" />
+    <ClInclude Include="ext\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\triangle.vert">
+    <None Include="shd\triangle.vert">
       <Filter>src\shaders</Filter>
     </None>
-    <None Include="shaders\triangle.frag">
+    <None Include="shd\triangle.frag">
       <Filter>src\shaders</Filter>
     </None>
-    <None Include="shaders\spirv.bat">
+    <None Include="shd\spirv.bat">
       <Filter>src\shaders</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\img\borderlands.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\img\butterfly.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

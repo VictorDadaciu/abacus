@@ -68,9 +68,10 @@ namespace abc
 	{
 		glm::vec2 pos;
 		glm::vec3 color;
+		glm::vec2 uv;
 
 		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions();
+		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
 	};
 
 	struct UniformBufferObject
@@ -99,7 +100,16 @@ namespace abc
 		void CreateUniformBuffers();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		void CreateTextureImage();
+		void CreateTextureImageView();
+		void CreateTextureSampler();
+		VkImageView CreateImageView(VkImage image, VkFormat format);
+		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem);
+		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CreateCommandBuffers();
+		VkCommandBuffer BeginSingleTimeCommands();
+		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
 
@@ -139,6 +149,10 @@ namespace abc
 		Pipeline m_graphicsPipeline{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
+		VkImage m_image{};
+		VkDeviceMemory m_imageMem{};
+		VkImageView m_imageView{};
+		VkSampler m_sampler{};
 		Buffer* m_vertexBuffer{};
 		Buffer* m_indexBuffer{};
 		std::vector<VkBuffer> m_uniformBuffers{};
@@ -157,10 +171,10 @@ namespace abc
 		VkDebugUtilsMessengerEXT m_debugMessenger{};
 
 		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}},
-			{{0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}},
-			{{0.5f, 0.5f}, {0.1f, 0.1f, 0.98f}},
-			{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+			{{-0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> indices = {
