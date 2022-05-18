@@ -167,14 +167,14 @@ $(SolutionDir)shaders\spirv.bat</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="sdk\vlk\Renderer.cpp" />
+    <ClCompile Include="sdk\vlk\GraphicsRenderer.cpp" />
     <ClCompile Include="sdk\vlk\Buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils\FileReader.h" />
     <ClInclude Include="sdk\Application.h" />
     <ClInclude Include="utils\pch.h" />
-    <ClInclude Include="sdk\vlk\Renderer.h" />
+    <ClInclude Include="sdk\vlk\GraphicsRenderer.h" />
     <ClInclude Include="sdk\vlk\Buffer.h" />
   </ItemGroup>
   <ItemGroup>

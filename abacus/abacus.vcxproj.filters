@@ -26,7 +26,7 @@
     <ClCompile Include="sdk\Application.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\vlk\Renderer.cpp">
+    <ClCompile Include="sdk\vlk\GraphicsRenderer.cpp">
       <Filter>src\sdk</Filter>
     </ClCompile>
     <ClCompile Include="abacus.cpp">
@@ -46,7 +46,7 @@
     <ClInclude Include="sdk\Application.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
-    <ClInclude Include="sdk\vlk\Renderer.h">
+    <ClInclude Include="sdk\vlk\GraphicsRenderer.h">
       <Filter>src\sdk</Filter>
     </ClInclude>
     <ClInclude Include="utils\FileReader.h" />

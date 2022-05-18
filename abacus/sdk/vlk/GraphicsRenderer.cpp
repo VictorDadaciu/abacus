@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Renderer.h"
+#include "GraphicsRenderer.h"
 
 #include "Application.h"
 #include "Buffer.h"
@@ -10,18 +10,18 @@
 
 namespace abc
 {
-	Renderer* Renderer::st_instance = nullptr;
+	GraphicsRenderer* GraphicsRenderer::st_instance = nullptr;
 
-	Renderer* Renderer::GetInstance()
+	GraphicsRenderer* GraphicsRenderer::GetInstance()
 	{
 		if (!st_instance)
 		{
-			st_instance = new Renderer();
+			st_instance = new GraphicsRenderer();
 		}
 		return st_instance;
 	}
 
-	Renderer::Renderer()
+	GraphicsRenderer::GraphicsRenderer()
 	{
 		CreateVulkanInstance();
 		SetupDebugMessenger();
@@ -44,7 +44,7 @@ namespace abc
 		CreateSyncObjects();
 	}
 
-	void Renderer::CreateVulkanInstance()
+	void GraphicsRenderer::CreateVulkanInstance()
 	{
 		if (m_enableValidationLayers && !CheckValidationLayerSupport())
 		{
@@ -88,7 +88,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::PickPhysicalDevice()
+	void GraphicsRenderer::PickPhysicalDevice()
 	{
 		m_device.physical = VK_NULL_HANDLE;
 
@@ -117,7 +117,7 @@ namespace abc
 		}
 	}
 
-	bool Renderer::IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice)
+	bool GraphicsRenderer::IsPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice)
 	{
 		//TODO: There is a bunch of things I can do here
 		QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
@@ -134,7 +134,7 @@ namespace abc
 		return indices.IsComplete() && extensionsSupported && swapChainAdequate;
 	}
 
-	bool Renderer::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
+	bool GraphicsRenderer::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
 	{
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
@@ -152,7 +152,7 @@ namespace abc
 		return requiredExtensions.empty();
 	}
 
-	void Renderer::CreateLogicalDevice()
+	void GraphicsRenderer::CreateLogicalDevice()
 	{
 		QueueFamilyIndices indices = FindQueueFamilies(m_device.physical);
 
@@ -198,7 +198,7 @@ namespace abc
 		vkGetDeviceQueue(m_device.logical, indices.presentFamily.value(), 0, &m_device.presentQueue);
 	}
 
-	VkSurfaceFormatKHR Renderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	VkSurfaceFormatKHR GraphicsRenderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
@@ -211,7 +211,7 @@ namespace abc
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR Renderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR GraphicsRenderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 	{
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
@@ -224,7 +224,7 @@ namespace abc
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkExtent2D Renderer::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	VkExtent2D GraphicsRenderer::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		{
@@ -247,7 +247,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateSwapchain()
+	void GraphicsRenderer::CreateSwapchain()
 	{
 		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_device.physical);
 
@@ -304,7 +304,7 @@ namespace abc
 		m_swapchain.extent = extent;
 	}
 
-	void Renderer::CreateImageViews()
+	void GraphicsRenderer::CreateImageViews()
 	{
 		m_swapchain.imageViews.resize(m_swapchain.images.size());
 
@@ -332,7 +332,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateRenderPass()
+	void GraphicsRenderer::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = m_swapchain.imageFormat;
@@ -376,7 +376,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreatePipeline() 
+	void GraphicsRenderer::CreatePipeline() 
 	{
 		m_graphicsPipeline.vertCode = ReadBinaryFile("shaders/triangle_vert.spv");
 		m_graphicsPipeline.fragCode = ReadBinaryFile("shaders/triangle_frag.spv");
@@ -515,7 +515,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateDescriptorSetLayout()
+	void GraphicsRenderer::CreateDescriptorSetLayout()
 	{
 		VkDescriptorSetLayoutBinding uboLayoutBinding{};
 		uboLayoutBinding.binding = 0;
@@ -535,7 +535,7 @@ namespace abc
 		}
 	}
 
-	VkShaderModule Renderer::CreateShaderModule(const std::vector<char>& code)
+	VkShaderModule GraphicsRenderer::CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -550,7 +550,7 @@ namespace abc
 		return shaderModule;
 	}
 
-	void Renderer::CreateFramebuffers()
+	void GraphicsRenderer::CreateFramebuffers()
 	{
 		m_framebuffers.resize(m_swapchain.imageViews.size());
 		for (size_t i = 0; i < m_framebuffers.size(); i++)
@@ -575,7 +575,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateCommandPool()
+	void GraphicsRenderer::CreateCommandPool()
 	{
 		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_device.physical);
 
@@ -616,7 +616,7 @@ namespace abc
 		return attributeDescriptions;
 	}
 
-	void Renderer::CreateVertexBuffer()
+	void GraphicsRenderer::CreateVertexBuffer()
 	{
 		VkBuffer vertexBuffer{};
 		VkDeviceMemory vertexMemory{};
@@ -642,7 +642,7 @@ namespace abc
 		m_vertexBuffer = new Buffer(vertexBuffer, vertexMemory, BufferType::VERTEX);
 	}
 
-	void Renderer::CreateIndexBuffer()
+	void GraphicsRenderer::CreateIndexBuffer()
 	{
 		VkBuffer indexBuffer{};
 		VkDeviceMemory indexMemory{};
@@ -668,7 +668,7 @@ namespace abc
 		m_indexBuffer = new Buffer(indexBuffer, indexMemory, BufferType::INDEX);
 	}
 
-	void Renderer::CreateUniformBuffers()
+	void GraphicsRenderer::CreateUniformBuffers()
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -681,7 +681,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateDescriptorPool()
+	void GraphicsRenderer::CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -699,7 +699,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateDescriptorSets()
+	void GraphicsRenderer::CreateDescriptorSets()
 	{
 		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
@@ -736,7 +736,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateCommandBuffers()
+	void GraphicsRenderer::CreateCommandBuffers()
 	{
 		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -752,7 +752,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+	void GraphicsRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -790,7 +790,7 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateSyncObjects()
+	void GraphicsRenderer::CreateSyncObjects()
 	{
 		m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -814,7 +814,7 @@ namespace abc
 		}
 	}
 
-	uint32_t Renderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	uint32_t GraphicsRenderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(m_device.physical, &memProperties);
@@ -830,7 +830,7 @@ namespace abc
 		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 
-	void Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void GraphicsRenderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -859,7 +859,7 @@ namespace abc
 		vkBindBufferMemory(m_device.logical, buffer, bufferMemory, 0);
 	}
 
-	void Renderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	void GraphicsRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -894,7 +894,7 @@ namespace abc
 		vkFreeCommandBuffers(m_device.logical, m_commandPool, 1, &commandBuffer);
 	}
 
-	void Renderer::UpdateUniformBuffer(uint32_t currentImage)
+	void GraphicsRenderer::UpdateUniformBuffer(uint32_t currentImage)
 	{
 		static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -913,7 +913,7 @@ namespace abc
 		vkUnmapMemory(m_device.logical, m_uniformBuffersMemory[m_currentFrame]);
 	}
 
-	void Renderer::DrawFrame()
+	void GraphicsRenderer::DrawFrame()
 	{
 		vkWaitForFences(m_device.logical, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -984,14 +984,14 @@ namespace abc
 		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void Renderer::WaitForDeviceToIdle()
+	void GraphicsRenderer::WaitForDeviceToIdle()
 	{
 		vkDeviceWaitIdle(m_device.logical);
 	}
 
-	void Renderer::RecreateSwapchain()
+	void GraphicsRenderer::RecreateSwapchain()
 	{
-		while (SDL_GetWindowFlags(m_app->GetActiveWindow()->Raw()) & SDL_WINDOW_MINIMIZED)
+		while (SDL_GetWindowFlags(APP->GetActiveWindow()->Raw()) & SDL_WINDOW_MINIMIZED)
 		{
 			SDL_Event e;
 			SDL_PollEvent(&e);
@@ -1008,7 +1008,7 @@ namespace abc
 		CreateFramebuffers();
 	}
 
-	void Renderer::CleanupSwapchain()
+	void GraphicsRenderer::CleanupSwapchain()
 	{
 		for (int i = 0; i < m_framebuffers.size(); i++)
 		{
@@ -1030,7 +1030,7 @@ namespace abc
 		vkDestroySwapchainKHR(m_device.logical, m_swapchain.sc, nullptr);
 	}
 
-	void Renderer::Destroy()
+	void GraphicsRenderer::Destroy()
 	{
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -1069,7 +1069,7 @@ namespace abc
 		vkDestroyInstance(m_vk, nullptr);
 	}
 
-	bool Renderer::CheckValidationLayerSupport()
+	bool GraphicsRenderer::CheckValidationLayerSupport()
 	{
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -1096,12 +1096,12 @@ namespace abc
 		return true;
 	}
 
-	std::vector<const char*> Renderer::GetRequiredExtensions()
+	std::vector<const char*> GraphicsRenderer::GetRequiredExtensions()
 	{
 		uint32_t sdlExtensionCount = 0;
-		SDL_Vulkan_GetInstanceExtensions(m_app->GetActiveWindow()->Raw(), &sdlExtensionCount, nullptr);
+		SDL_Vulkan_GetInstanceExtensions(APP->GetActiveWindow()->Raw(), &sdlExtensionCount, nullptr);
 		std::vector<const char*> sdlExtensions(sdlExtensionCount);
-		SDL_Vulkan_GetInstanceExtensions(m_app->GetActiveWindow()->Raw(), &sdlExtensionCount, sdlExtensions.data());
+		SDL_Vulkan_GetInstanceExtensions(APP->GetActiveWindow()->Raw(), &sdlExtensionCount, sdlExtensions.data());
 
 		std::vector<const char*> extensions(sdlExtensions);
 
@@ -1113,7 +1113,7 @@ namespace abc
 		return extensions;
 	}
 
-	void Renderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	void GraphicsRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 	{
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -1129,7 +1129,7 @@ namespace abc
 		createInfo.pUserData = nullptr;
 	}
 
-	void Renderer::SetupDebugMessenger()
+	void GraphicsRenderer::SetupDebugMessenger()
 	{
 		if (!m_enableValidationLayers)
 			return;
@@ -1143,15 +1143,15 @@ namespace abc
 		}
 	}
 
-	void Renderer::CreateSurface()
+	void GraphicsRenderer::CreateSurface()
 	{
-		if (!SDL_Vulkan_CreateSurface(m_app->GetActiveWindow()->Raw(), m_vk, &m_surface))
+		if (!SDL_Vulkan_CreateSurface(APP->GetActiveWindow()->Raw(), m_vk, &m_surface))
 		{
 			throw std::runtime_error("Failed to create window surface!");
 		}
 	}
 
-	QueueFamilyIndices Renderer::FindQueueFamilies(VkPhysicalDevice physicalDevice)
+	QueueFamilyIndices GraphicsRenderer::FindQueueFamilies(VkPhysicalDevice physicalDevice)
 	{
 		QueueFamilyIndices indices;
 
@@ -1184,7 +1184,7 @@ namespace abc
 		return indices;
 	}
 
-	SwapChainSupportDetails Renderer::QuerySwapChainSupport(VkPhysicalDevice physicalDevice)
+	SwapChainSupportDetails GraphicsRenderer::QuerySwapChainSupport(VkPhysicalDevice physicalDevice)
 	{
 		SwapChainSupportDetails details;
 
@@ -1213,7 +1213,7 @@ namespace abc
 	}
 
 	// validation callback
-	VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::DebugCallback(
+	VKAPI_ATTR VkBool32 VKAPI_CALL GraphicsRenderer::DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,

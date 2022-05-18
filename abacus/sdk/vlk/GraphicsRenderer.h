@@ -81,10 +81,10 @@ namespace abc
 	};
 
 	class Buffer;
-	class Renderer
+	class GraphicsRenderer
 	{
 	public:
-		static Renderer* GetInstance();
+		static GraphicsRenderer* GetInstance();
 
 		//getters
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
@@ -120,8 +120,8 @@ namespace abc
 		const int MAX_FRAMES_IN_FLIGHT = 3;
 
 	protected:
-		Renderer();
-		static Renderer* st_instance;
+		GraphicsRenderer();
+		static GraphicsRenderer* st_instance;
 
 #ifdef NDEBUG
 		const bool m_enableValidationLayers = false;
@@ -203,6 +203,6 @@ namespace abc
 		void RecordCommandBuffer(VkCommandBuffer, uint32_t imageIndex);
 	};
 
-#define RENDERER (Renderer::GetInstance())
+#define RENDERER (GraphicsRenderer::GetInstance())
 }
 
