@@ -81,12 +81,11 @@ namespace abc
 	};
 
 	class Buffer;
-	class Application;
 	class Renderer
 	{
 	public:
-		Renderer(Application* app);
-		
+		static Renderer* GetInstance();
+
 		//getters
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
 		void WindowResized() { m_framebufferResized = true; }
@@ -121,6 +120,8 @@ namespace abc
 		const int MAX_FRAMES_IN_FLIGHT = 3;
 
 	protected:
+		Renderer();
+		static Renderer* st_instance;
 
 #ifdef NDEBUG
 		const bool m_enableValidationLayers = false;
@@ -129,7 +130,6 @@ namespace abc
 #endif
 
 		//variables
-		Application* m_app{};
 		VkInstance m_vk{};
 		VkSurfaceKHR m_surface{};
 		Device m_device{};
@@ -168,7 +168,7 @@ namespace abc
 		};
 
 		// inits
-		void CreateInstance();
+		void CreateVulkanInstance();
 		bool CheckValidationLayerSupport();
 		std::vector<const char*> GetRequiredExtensions();
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -202,5 +202,7 @@ namespace abc
 
 		void RecordCommandBuffer(VkCommandBuffer, uint32_t imageIndex);
 	};
+
+#define RENDERER (Renderer::GetInstance())
 }
 

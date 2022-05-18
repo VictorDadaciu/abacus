@@ -32,15 +32,15 @@ namespace abc
 	public:
 		static Application* GetInstance();
 
-		void Start();
 		void Update();
 		const bool IsRunning() const { return m_running; };
 		void Quit();
 
 		Window* GetActiveWindow() const { return m_activeWindow; }
+
 	protected:
+		Application();
 		static Application* st_instance;
-		Renderer* m_renderer;
 
 		Window* m_activeWindow;
 		bool m_running = false;

@@ -39,10 +39,9 @@ namespace abc
         return st_instance;
     }
 
-    void Application::Start()
+    Application::Application()
     {
         m_activeWindow = new Window();
-        m_renderer = new Renderer(this);
 
         m_running = true;
     }
@@ -60,19 +59,17 @@ namespace abc
             {
                 if (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
                 {
-                    m_renderer->WindowResized();
+                    RENDERER->WindowResized();
                 }
             }
         }
-        m_renderer->DrawFrame();
+        RENDERER->DrawFrame();
     }
 
     void Application::Quit()
     {
-        m_renderer->WaitForDeviceToIdle();
-
-        m_renderer->Destroy();
-        delete m_renderer;
+        RENDERER->WaitForDeviceToIdle();
+        RENDERER->Destroy();
 
         m_activeWindow->Close();
         delete m_activeWindow;

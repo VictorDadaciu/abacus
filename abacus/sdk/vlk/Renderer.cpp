@@ -10,10 +10,20 @@
 
 namespace abc
 {
-	Renderer::Renderer(Application* app) :
-		m_app(app)
+	Renderer* Renderer::st_instance = nullptr;
+
+	Renderer* Renderer::GetInstance()
 	{
-		CreateInstance();
+		if (!st_instance)
+		{
+			st_instance = new Renderer();
+		}
+		return st_instance;
+	}
+
+	Renderer::Renderer()
+	{
+		CreateVulkanInstance();
 		SetupDebugMessenger();
 		CreateSurface();
 		PickPhysicalDevice();
@@ -34,7 +44,7 @@ namespace abc
 		CreateSyncObjects();
 	}
 
-	void Renderer::CreateInstance()
+	void Renderer::CreateVulkanInstance()
 	{
 		if (m_enableValidationLayers && !CheckValidationLayerSupport())
 		{
