@@ -71,5 +71,8 @@
     <Image Include="res\img\butterfly.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="res\img\diana.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

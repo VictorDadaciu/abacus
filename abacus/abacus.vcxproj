@@ -193,6 +193,7 @@ $(SolutionDir)shd\spirv.bat</Command>
   <ItemGroup>
     <Image Include="res\img\borderlands.png" />
     <Image Include="res\img\butterfly.png" />
+    <Image Include="res\img\diana.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

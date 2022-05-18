@@ -66,7 +66,7 @@ namespace abc
 
 	struct Vertex
 	{
-		glm::vec2 pos;
+		glm::vec3 pos;
 		glm::vec3 color;
 		glm::vec2 uv;
 
@@ -104,7 +104,8 @@ namespace abc
 		void CreateTextureImage();
 		void CreateTextureImageView();
 		void CreateTextureSampler();
-		VkImageView CreateImageView(VkImage image, VkFormat format);
+		void CreateDepthResources();
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem);
 		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CreateCommandBuffers();
@@ -152,6 +153,9 @@ namespace abc
 		VkImage m_image{};
 		VkDeviceMemory m_imageMem{};
 		VkImageView m_imageView{};
+		VkImage m_depthImage{};
+		VkDeviceMemory m_depthImageMem{};
+		VkImageView m_depthImageView{};
 		VkSampler m_sampler{};
 		Buffer* m_vertexBuffer{};
 		Buffer* m_indexBuffer{};
@@ -171,14 +175,20 @@ namespace abc
 		VkDebugUtilsMessengerEXT m_debugMessenger{};
 
 		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+			{{-0.5f, -0.5f, 0.0f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.0f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+			{{-0.5f, -0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f, -0.5f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0
+			0, 1, 2, 2, 3, 0,
+			4, 5, 6, 6, 7, 4
 		};
 
 		// inits
@@ -210,6 +220,9 @@ namespace abc
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice);
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiliing, VkFormatFeatureFlags features);
+		VkFormat FindDepthFormat();
+		const bool HasStencilComponent(VkFormat format) const { return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT; }
 
 		void RecreateSwapchain();
 		void CleanupSwapchain();
