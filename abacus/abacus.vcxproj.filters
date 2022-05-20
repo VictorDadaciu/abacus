@@ -38,6 +38,15 @@
     <ClCompile Include="sdk\vlk\Buffer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="sdk\GameObject.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\Component.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\Transform.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utl\pch.h">
@@ -52,6 +61,9 @@
     <ClInclude Include="utl\FileReader.h" />
     <ClInclude Include="sdk\vlk\Buffer.h" />
     <ClInclude Include="ext\stb_image.h" />
+    <ClInclude Include="sdk\GameObject.h" />
+    <ClInclude Include="sdk\Component.h" />
+    <ClInclude Include="sdk\Transform.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shd\triangle.vert">
