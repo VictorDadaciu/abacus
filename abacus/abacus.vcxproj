@@ -166,9 +166,12 @@ $(SolutionDir)shd\spirv.bat</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="abacus.cpp" />
+    <ClCompile Include="sdk\vlk\Model.cpp" />
+    <ClCompile Include="sdk\RenderComponent.cpp" />
+    <ClCompile Include="sdk\CameraComponent.cpp" />
     <ClCompile Include="sdk\Component.cpp" />
     <ClCompile Include="sdk\GameObject.cpp" />
-    <ClCompile Include="sdk\Transform.cpp" />
+    <ClCompile Include="sdk\TransformComponent.cpp" />
     <ClCompile Include="utl\FileReader.cpp" />
     <ClCompile Include="sdk\Application.cpp" />
     <ClCompile Include="utl\pch.cpp">
@@ -181,10 +184,14 @@ $(SolutionDir)shd\spirv.bat</Command>
     <ClCompile Include="sdk\vlk\Buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ext\tiny_obj_loader.h" />
+    <ClInclude Include="sdk\vlk\Model.h" />
+    <ClInclude Include="sdk\RenderComponent.h" />
+    <ClInclude Include="sdk\CameraComponent.h" />
     <ClInclude Include="sdk\Component.h" />
     <ClInclude Include="ext\stb_image.h" />
     <ClInclude Include="sdk\GameObject.h" />
-    <ClInclude Include="sdk\Transform.h" />
+    <ClInclude Include="sdk\TransformComponent.h" />
     <ClInclude Include="utl\FileReader.h" />
     <ClInclude Include="sdk\Application.h" />
     <ClInclude Include="utl\pch.h" />

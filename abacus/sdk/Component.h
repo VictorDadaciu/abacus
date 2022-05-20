@@ -7,6 +7,7 @@ namespace abc
 		CUSTOM = 0x0001,
 		TRANSFORM = 0x0002,
 		RENDER = 0x0004,
+		CAMERA = 0x0008,
 	};
 
 	class GameObject;
