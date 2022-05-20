@@ -8,6 +8,7 @@ int main(int argc, char* argv[])
 {
     try
     {
+        APP->Initialise();
         while (APP->IsRunning())
         {
             APP->Update();

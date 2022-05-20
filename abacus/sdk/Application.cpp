@@ -39,11 +39,16 @@ namespace abc
         return st_instance;
     }
 
-    Application::Application()
+    void Application::Initialise()
     {
         m_activeWindow = new Window();
 
         m_running = true;
+        RENDERER->Initialise();
+    }
+
+    Application::Application()
+    {
     }
 
     void Application::Update()

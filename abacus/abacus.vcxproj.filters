@@ -89,15 +89,4 @@
       <Filter>src\shaders</Filter>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Image Include="res\img\borderlands.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\img\butterfly.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="res\img\diana.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
 </Project>

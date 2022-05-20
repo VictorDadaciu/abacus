@@ -31,6 +31,7 @@ namespace abc
 	{
 	public:
 		static Application* GetInstance();
+		void Initialise();
 
 		void Update();
 		const bool IsRunning() const { return m_running; };
@@ -42,7 +43,7 @@ namespace abc
 		Application();
 		static Application* st_instance;
 
-		Window* m_activeWindow;
+		Window* m_activeWindow{};
 		bool m_running = false;
 	};
 

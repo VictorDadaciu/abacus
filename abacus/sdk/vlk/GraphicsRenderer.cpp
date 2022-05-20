@@ -3,6 +3,7 @@
 
 #include "Application.h"
 #include "Buffer.h"
+#include "Model.h"
 
 #include "FileReader.h"
 
@@ -24,7 +25,7 @@ namespace abc
 		return st_instance;
 	}
 
-	GraphicsRenderer::GraphicsRenderer()
+	void GraphicsRenderer::Initialise()
 	{
 		CreateVulkanInstance();
 		SetupDebugMessenger();
@@ -42,13 +43,16 @@ namespace abc
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureSampler();
-		CreateVertexBuffer();
-		CreateIndexBuffer();
+		LoadModel();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
+	}
+
+	GraphicsRenderer::GraphicsRenderer()
+	{
 	}
 
 	void GraphicsRenderer::CreateVulkanInstance()
@@ -60,7 +64,7 @@ namespace abc
 
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "Triangle";
+		appInfo.pApplicationName = "Abacus";
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "Abacus";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -651,56 +655,9 @@ namespace abc
 		return attributeDescriptions;
 	}
 
-	void GraphicsRenderer::CreateVertexBuffer()
+	void GraphicsRenderer::LoadModel()
 	{
-		VkBuffer vertexBuffer{};
-		VkDeviceMemory vertexMemory{};
-		VkBuffer stagingBuffer{};
-		VkDeviceMemory stagingMemory{};
-
-		VkDeviceSize bufferSize;
-		bufferSize = sizeof(vertices[0]) * vertices.size();
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
-
-		void* data;
-		vkMapMemory(m_device.logical, stagingMemory, 0, bufferSize, 0, &data);
-		memcpy(data, vertices.data(), (size_t)bufferSize);
-		vkUnmapMemory(m_device.logical, stagingMemory);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexMemory);
-		CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-		vkDestroyBuffer(m_device.logical, stagingBuffer, nullptr);
-		vkFreeMemory(m_device.logical, stagingMemory, nullptr);
-
-		m_vertexBuffer = new Buffer(vertexBuffer, vertexMemory, BufferType::VERTEX);
-	}
-
-	void GraphicsRenderer::CreateIndexBuffer()
-	{
-		VkBuffer indexBuffer{};
-		VkDeviceMemory indexMemory{};
-		VkBuffer stagingBuffer{};
-		VkDeviceMemory stagingMemory{};
-
-		VkDeviceSize bufferSize;
-		bufferSize = sizeof(indices[0]) * indices.size();
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
-
-		void* data;
-		vkMapMemory(m_device.logical, stagingMemory, 0, bufferSize, 0, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
-		vkUnmapMemory(m_device.logical, stagingMemory);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexMemory);
-		CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-		vkDestroyBuffer(m_device.logical, stagingBuffer, nullptr);
-		vkFreeMemory(m_device.logical, stagingMemory, nullptr);
-
-		m_indexBuffer = new Buffer(indexBuffer, indexMemory, BufferType::INDEX);
+		m_model = new Model("res/mdl/viking_room.obj");
 	}
 
 	void GraphicsRenderer::CreateUniformBuffers()
@@ -708,11 +665,9 @@ namespace abc
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
 		m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i], m_uniformBuffersMemory[i]);
+			m_uniformBuffers[i] = new UniformBuffer();
 		}
 	}
 
@@ -754,7 +709,7 @@ namespace abc
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_uniformBuffers[i];
+			bufferInfo.buffer = m_uniformBuffers[i]->GetBuffer();
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -862,12 +817,12 @@ namespace abc
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.pl);
-		VkBuffer vertexBuffers[] = { m_vertexBuffer->GetBuffer() };
+		VkBuffer vertexBuffers[] = { m_model->GetVertexBufferRaw() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_model->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_model->GetIndices().size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -996,7 +951,7 @@ namespace abc
 	void GraphicsRenderer::CreateTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("res/img/borderlands.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load("res/img/viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4; 
 
 		if (!pixels)
@@ -1232,15 +1187,15 @@ namespace abc
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::mat4(1.0f);
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), m_swapchain.extent.width / (float)m_swapchain.extent.height, 0.1f, 1000.0f);
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(m_device.logical, m_uniformBuffersMemory[m_currentFrame], 0, sizeof(ubo), 0, &data);
+		vkMapMemory(m_device.logical, m_uniformBuffers[m_currentFrame]->GetBufferMemory(), 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(m_device.logical, m_uniformBuffersMemory[m_currentFrame]);
+		vkUnmapMemory(m_device.logical, m_uniformBuffers[m_currentFrame]->GetBufferMemory());
 	}
 
 	void GraphicsRenderer::DrawFrame()
@@ -1374,11 +1329,8 @@ namespace abc
 			vkDestroyFence(m_device.logical, m_inFlightFences[i], nullptr);
 		}
 
-		m_vertexBuffer->Destroy(m_device.logical);
-		delete m_vertexBuffer;
-
-		m_indexBuffer->Destroy(m_device.logical);
-		delete m_indexBuffer;
+		m_model->Destroy();
+		delete m_model;
 
 		vkDestroyCommandPool(m_device.logical, m_commandPool, nullptr);
 		CleanupSwapchain();
@@ -1391,8 +1343,8 @@ namespace abc
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			vkDestroyBuffer(m_device.logical, m_uniformBuffers[i], nullptr);
-			vkFreeMemory(m_device.logical, m_uniformBuffersMemory[i], nullptr);
+			m_uniformBuffers[i]->Destroy();
+			delete m_uniformBuffers[i];
 		}
 
 		vkDestroyDescriptorPool(m_device.logical, m_descriptorPool, nullptr);

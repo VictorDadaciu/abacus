@@ -72,6 +72,7 @@ namespace abc
 
 		static VkVertexInputBindingDescription GetBindingDescription();
 		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
+		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv; }
 	};
 
 	struct UniformBufferObject
@@ -81,11 +82,14 @@ namespace abc
 		alignas(16) glm::mat4 proj;
 	};
 
+	class Model;
+	class UniformBuffer;
 	class Buffer;
 	class GraphicsRenderer
 	{
 	public:
 		static GraphicsRenderer* GetInstance();
+		void Initialise();
 
 		//getters
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
@@ -95,8 +99,7 @@ namespace abc
 		void DrawFrame();
 		void WaitForDeviceToIdle();
 
-		void CreateVertexBuffer();
-		void CreateIndexBuffer();
+		void LoadModel();
 		void CreateUniformBuffers();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -111,6 +114,8 @@ namespace abc
 		void CreateCommandBuffers();
 		VkCommandBuffer BeginSingleTimeCommands();
 		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+		const Device& GetDevice() const { return m_device; }
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
 
@@ -146,7 +151,7 @@ namespace abc
 		Device m_device{};
 		Swapchain m_swapchain{};
 		VkRenderPass m_renderPass{};
-		VkDescriptorSetLayout m_descriptorSetLayout;
+		VkDescriptorSetLayout m_descriptorSetLayout{};
 		Pipeline m_graphicsPipeline{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
@@ -157,10 +162,8 @@ namespace abc
 		VkDeviceMemory m_depthImageMem{};
 		VkImageView m_depthImageView{};
 		VkSampler m_sampler{};
-		Buffer* m_vertexBuffer{};
-		Buffer* m_indexBuffer{};
-		std::vector<VkBuffer> m_uniformBuffers{};
-		std::vector<VkDeviceMemory> m_uniformBuffersMemory{};
+		Model* m_model{};
+		std::vector<UniformBuffer*> m_uniformBuffers{};
 		VkDescriptorPool m_descriptorPool{};
 		std::vector<VkDescriptorSet> m_descriptorSets{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
@@ -173,23 +176,6 @@ namespace abc
 		bool m_framebufferResized = false;
 
 		VkDebugUtilsMessengerEXT m_debugMessenger{};
-
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-			{{-0.5f, -0.5f, -0.5f}, {0.98f, 0.1f, 0.1f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {0.1f, 0.98f, 0.1f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.1f, 0.1f, 0.98f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
 
 		// inits
 		void CreateVulkanInstance();
@@ -231,5 +217,19 @@ namespace abc
 	};
 
 #define RENDERER (GraphicsRenderer::GetInstance())
+}
+
+namespace std
+{
+	template<>
+	struct hash<abc::Vertex>
+	{
+		size_t operator()(abc::Vertex const& vertex) const
+		{
+			return ((hash<glm::vec3>()(vertex.pos) ^
+					 (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+				(hash<glm::vec2>()(vertex.uv) << 1);
+		}
+	};
 }
 

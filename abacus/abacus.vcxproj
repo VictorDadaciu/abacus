@@ -154,6 +154,7 @@ $(SolutionDir)shd\spirv.bat</Command>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.211.0\Include\vulkan;C:\VulkanSDK\1.3.211.0\Include\vk_video;C:\VulkanSDK\1.3.211.0\Include\spirv_cross;C:\VulkanSDK\1.3.211.0\Include\spirv-tools;C:\VulkanSDK\1.3.211.0\Include\spirv-headers;C:\VulkanSDK\1.3.211.0\Include\shaderc;C:\VulkanSDK\1.3.211.0\Include\SDL2;C:\VulkanSDK\1.3.211.0\Include\glslang;C:\VulkanSDK\1.3.211.0\Include\glm;C:\VulkanSDK\1.3.211.0\Include\dxc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -202,11 +203,6 @@ $(SolutionDir)shd\spirv.bat</Command>
     <None Include="shd\spirv.bat" />
     <None Include="shd\triangle.frag" />
     <None Include="shd\triangle.vert" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="res\img\borderlands.png" />
-    <Image Include="res\img\butterfly.png" />
-    <Image Include="res\img\diana.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

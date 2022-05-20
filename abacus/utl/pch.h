@@ -15,9 +15,11 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_EXPERIMENTAL
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <gtc/quaternion.hpp>
+#include <gtx/hash.hpp>
 
 //std
 #include <stdio.h>
@@ -35,5 +37,6 @@
 #include <algorithm> 
 #include <fstream>
 #include <array>
+#include <unordered_map>
 
 #endif //PCH_H
