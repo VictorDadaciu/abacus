@@ -173,6 +173,7 @@ $(SolutionDir)shd\spirv.bat</Command>
     <ClCompile Include="sdk\Component.cpp" />
     <ClCompile Include="sdk\GameObject.cpp" />
     <ClCompile Include="sdk\TransformComponent.cpp" />
+    <ClCompile Include="sdk\vlk\Texture.cpp" />
     <ClCompile Include="utl\FileReader.cpp" />
     <ClCompile Include="sdk\Application.cpp" />
     <ClCompile Include="utl\pch.cpp">
@@ -193,6 +194,7 @@ $(SolutionDir)shd\spirv.bat</Command>
     <ClInclude Include="ext\stb_image.h" />
     <ClInclude Include="sdk\GameObject.h" />
     <ClInclude Include="sdk\TransformComponent.h" />
+    <ClInclude Include="sdk\vlk\Texture.h" />
     <ClInclude Include="utl\FileReader.h" />
     <ClInclude Include="sdk\Application.h" />
     <ClInclude Include="utl\pch.h" />

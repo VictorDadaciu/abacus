@@ -15,6 +15,9 @@ namespace abc
 	{
 	public:
 		Component(GameObject* gameObject = nullptr, ComponentType type = ComponentType::CUSTOM);
+
+		virtual void Destroy() = 0;
+
 		virtual ~Component();
 
 		GameObject* gameObject{};

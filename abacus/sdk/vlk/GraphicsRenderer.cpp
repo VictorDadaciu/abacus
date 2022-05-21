@@ -2,15 +2,16 @@
 #include "GraphicsRenderer.h"
 
 #include "Application.h"
+#include "GameObject.h"
 #include "Buffer.h"
+#include "Component.h"
+#include "RenderComponent.h"
+#include "Texture.h"
 #include "Model.h"
 
 #include "FileReader.h"
 
 #include <chrono>
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
 namespace abc
 {
@@ -40,9 +41,6 @@ namespace abc
 		CreateCommandPool();
 		CreateDepthResources();
 		CreateFramebuffers();
-		CreateTextureImage();
-		CreateTextureImageView();
-		CreateTextureSampler();
 		LoadModel();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
@@ -657,7 +655,8 @@ namespace abc
 
 	void GraphicsRenderer::LoadModel()
 	{
-		m_model = new Model("res/mdl/viking_room.obj");
+		m_go = new GameObject();
+		m_go->AttachComponent(new RenderComponent(m_go, "res/mdl/viking_room.obj", "res/img/viking_room.png"));
 	}
 
 	void GraphicsRenderer::CreateUniformBuffers()
@@ -713,10 +712,12 @@ namespace abc
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
+			RenderComponent* renderComponent = m_go->GetRenderComponent();
+
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = m_imageView;
-			imageInfo.sampler = m_sampler;
+			imageInfo.imageView = renderComponent->GetTexture()->GetImageView();
+			imageInfo.sampler = renderComponent->GetTexture()->GetSampler();
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
@@ -815,14 +816,16 @@ namespace abc
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		renderPassInfo.pClearValues = clearValues.data();
 
+		RenderComponent* renderComponent = m_go->GetRenderComponent();
+
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.pl);
-		VkBuffer vertexBuffers[] = { m_model->GetVertexBufferRaw() };
+		VkBuffer vertexBuffers[] = { renderComponent->GetModel()->GetVertexBufferRaw() };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_model->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, renderComponent->GetModel()->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_model->GetIndices().size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(renderComponent->GetModel()->GetIndices().size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -946,38 +949,6 @@ namespace abc
 		m_depthImageView = CreateImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 		TransitionImageLayout(m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	}
-
-	void GraphicsRenderer::CreateTextureImage()
-	{
-		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("res/img/viking_room.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		VkDeviceSize imageSize = texWidth * texHeight * 4; 
-
-		if (!pixels)
-		{
-			throw std::runtime_error("Failed to load texture image!");
-		}
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(m_device.logical, stagingBufferMemory, 0, imageSize, 0, &data);
-		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vkUnmapMemory(m_device.logical, stagingBufferMemory);
-
-		stbi_image_free(pixels);
-
-		CreateImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_image, m_imageMem);
-
-		TransitionImageLayout(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		CopyBufferToImage(stagingBuffer, m_image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-		TransitionImageLayout(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		vkDestroyBuffer(m_device.logical, stagingBuffer, nullptr);
-		vkFreeMemory(m_device.logical, stagingBufferMemory, nullptr);
 	}
 
 	void GraphicsRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem)
@@ -1144,41 +1115,6 @@ namespace abc
 		return imageView;
 	}
 
-	void GraphicsRenderer::CreateTextureImageView()
-	{
-		m_imageView = CreateImageView(m_image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-	}
-
-	void GraphicsRenderer::CreateTextureSampler()
-	{
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-
-		VkPhysicalDeviceProperties properties{};
-		vkGetPhysicalDeviceProperties(m_device.physical, &properties);
-
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;	
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-
-		if (vkCreateSampler(m_device.logical, &samplerInfo, nullptr, &m_sampler) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create texture sampler!");
-		}
-	}
-
 	void GraphicsRenderer::UpdateUniformBuffer(uint32_t currentImage)
 	{
 		static auto startTime = std::chrono::high_resolution_clock::now();
@@ -1329,17 +1265,11 @@ namespace abc
 			vkDestroyFence(m_device.logical, m_inFlightFences[i], nullptr);
 		}
 
-		m_model->Destroy();
-		delete m_model;
+		m_go->Destroy();
+		delete m_go;
 
 		vkDestroyCommandPool(m_device.logical, m_commandPool, nullptr);
 		CleanupSwapchain();
-
-		vkDestroySampler(m_device.logical, m_sampler, nullptr);
-		vkDestroyImageView(m_device.logical, m_imageView, nullptr);
-
-		vkDestroyImage(m_device.logical, m_image, nullptr);
-		vkFreeMemory(m_device.logical, m_imageMem, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{

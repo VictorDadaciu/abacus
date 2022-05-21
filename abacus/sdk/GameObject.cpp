@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "GameObject.h"
 
-#include "Component.h"
+#include "RenderComponent.h"
 
 namespace abc
 {
@@ -17,8 +17,29 @@ namespace abc
 	{
 	}
 
+	RenderComponent* GameObject::GetRenderComponent()
+	{
+		for (auto component : m_components)
+		{
+			if (component->type == ComponentType::RENDER)
+			{
+				return static_cast<RenderComponent*>(component);
+			}
+		}
+		return nullptr;
+	}
+
 	void GameObject::AttachComponent(Component* component)
 	{
 		m_components.push_back(component);
+	}
+
+	void GameObject::Destroy()
+	{
+		for (int i = 0; i < m_components.size(); i++)
+		{
+			m_components[i]->Destroy();
+			delete m_components[i];
+		}
 	}
 }

@@ -82,7 +82,7 @@ namespace abc
 		alignas(16) glm::mat4 proj;
 	};
 
-	class Model;
+	class GameObject;
 	class UniformBuffer;
 	class Buffer;
 	class GraphicsRenderer
@@ -104,9 +104,6 @@ namespace abc
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-		void CreateTextureImage();
-		void CreateTextureImageView();
-		void CreateTextureSampler();
 		void CreateDepthResources();
 		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem);
@@ -155,14 +152,10 @@ namespace abc
 		Pipeline m_graphicsPipeline{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
-		VkImage m_image{};
-		VkDeviceMemory m_imageMem{};
-		VkImageView m_imageView{};
 		VkImage m_depthImage{};
 		VkDeviceMemory m_depthImageMem{};
 		VkImageView m_depthImageView{};
-		VkSampler m_sampler{};
-		Model* m_model{};
+		GameObject* m_go;
 		std::vector<UniformBuffer*> m_uniformBuffers{};
 		VkDescriptorPool m_descriptorPool{};
 		std::vector<VkDescriptorSet> m_descriptorSets{};

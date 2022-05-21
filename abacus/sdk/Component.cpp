@@ -12,7 +12,6 @@ namespace abc
 		{
 			throw std::runtime_error("Component cannot be unattached!");
 		}
-		gameObject->AttachComponent(this);
 	}
 
 	Component::~Component()

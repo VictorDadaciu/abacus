@@ -3,9 +3,11 @@
 #include <string>
 #include <vector>
 
+#include "Component.h"
+
 namespace abc
 {
-	class Component;
+	class RenderComponent;
 	class GameObject
 	{
 	public:
@@ -16,6 +18,10 @@ namespace abc
 		const std::string& GetName() const { return m_name; }
 
 		void AttachComponent(Component* component);
+
+		RenderComponent* GetRenderComponent();
+
+		void Destroy();
 
 	protected:
 		std::string m_name{};
