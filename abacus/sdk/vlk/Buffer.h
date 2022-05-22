@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GraphicsRenderer.h"
+#include "Shader.h"
 
 #include "glm.hpp"
 

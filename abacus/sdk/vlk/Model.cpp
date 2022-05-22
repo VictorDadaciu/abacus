@@ -5,10 +5,29 @@
 #include "tiny_obj_loader.h"
 
 #include "Buffer.h"
+#include "Shader.h"
+#include "GraphicsRenderer.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <gtx/hash.hpp>
+namespace std
+{
+    template<>
+    struct hash<abc::Vertex>
+    {
+        size_t operator()(abc::Vertex const& vertex) const
+        {
+            return ((hash<glm::vec3>()(vertex.pos) ^
+                     (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+                (hash<glm::vec2>()(vertex.uv) << 1);
+        }
+    };
+}
 
 namespace abc
 {
-	Model::Model(const std::string& meshPath)
+	Model::Model(const std::string& meshPath, Shader* shader) :
+		m_shader(shader)
 	{
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
@@ -53,6 +72,8 @@ namespace abc
 
         m_vertexBuffer = new VertexBuffer(m_vertices);
         m_indexBuffer = new IndexBuffer(m_indices);
+        CreateUniformBuffers();
+        CreateDescriptorSets();
 	}
 
     void Model::Destroy()
@@ -62,9 +83,53 @@ namespace abc
 
         m_indexBuffer->Destroy();
         delete m_indexBuffer;
+
+        for (size_t i = 0; i < m_uniformBuffers.size(); i++)
+        {
+            m_uniformBuffers[i]->Destroy();
+            delete m_uniformBuffers[i];
+        }
     }
 
     Model::~Model()
     {
     }
+
+	void Model::CreateUniformBuffers()
+	{
+		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::mat4(1.0f);
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f), RENDERER->GetSwapchain().extent.width / (float)RENDERER->GetSwapchain().extent.height, 0.1f, 1000.0f);
+        ubo.proj[1][1] *= -1;
+
+		m_uniformBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		for (size_t i = 0; i < m_uniformBuffers.size(); i++)
+		{
+			m_uniformBuffers[i] = new UniformBuffer();
+
+            void* data;
+            vkMapMemory(RENDERER->GetDevice().logical, m_uniformBuffers[i]->GetBufferMemory(), 0, sizeof(ubo), 0, &data);
+            memcpy(data, &ubo, sizeof(ubo));
+            vkUnmapMemory(RENDERER->GetDevice().logical, m_uniformBuffers[i]->GetBufferMemory());
+		}
+	}
+
+	void Model::CreateDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(RENDERER->MAX_FRAMES_IN_FLIGHT, m_shader->GetDescriptorSetLayout());
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_shader->GetDescriptorPool();
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_descriptorSets.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		if (vkAllocateDescriptorSets(RENDERER->GetDevice().logical, &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate descriptor sets!");
+		}
+	}
 }

@@ -59,6 +59,9 @@
     <ClCompile Include="sdk\vlk\Texture.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="sdk\vlk\Shader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utl\pch.h">
@@ -81,6 +84,7 @@
     <ClInclude Include="sdk\vlk\Model.h" />
     <ClInclude Include="ext\tiny_obj_loader.h" />
     <ClInclude Include="sdk\vlk\Texture.h" />
+    <ClInclude Include="sdk\vlk\Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shd\triangle.vert">

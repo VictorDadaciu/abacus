@@ -54,37 +54,8 @@ namespace abc
 		VkExtent2D extent{};
 	};
 
-	struct Pipeline
-	{
-		std::vector<char> vertCode{};
-		std::vector<char> fragCode{};
-		VkShaderModule vertModule{};
-		VkShaderModule fragModule{};
-		VkPipelineLayout layout{};
-		VkPipeline pl{};
-	};
-
-	struct Vertex
-	{
-		glm::vec3 pos;
-		glm::vec3 color;
-		glm::vec2 uv;
-
-		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
-		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv; }
-	};
-
-	struct UniformBufferObject
-	{
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-	};
-
 	class GameObject;
-	class UniformBuffer;
-	class Buffer;
+	class Shader;
 	class GraphicsRenderer
 	{
 	public:
@@ -95,12 +66,11 @@ namespace abc
 		const int GetCurrentFrameIndex() const { return m_currentFrame; }
 		void WindowResized() { m_framebufferResized = true; }
 
-		void UpdateUniformBuffer(uint32_t currentImage);
 		void DrawFrame();
 		void WaitForDeviceToIdle();
 
 		void LoadModel();
-		void CreateUniformBuffers();
+		VkFormat FindDepthFormat();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -113,6 +83,9 @@ namespace abc
 		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 		const Device& GetDevice() const { return m_device; }
+		const Swapchain& GetSwapchain() const { return m_swapchain; }
+		const VkImageView& GetDepthImageView() const { return m_depthImageView; }
+		const VkCommandPool& GetCommandPool() const { return m_commandPool; }
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
 
@@ -147,18 +120,12 @@ namespace abc
 		VkSurfaceKHR m_surface{};
 		Device m_device{};
 		Swapchain m_swapchain{};
-		VkRenderPass m_renderPass{};
-		VkDescriptorSetLayout m_descriptorSetLayout{};
-		Pipeline m_graphicsPipeline{};
-		std::vector<VkFramebuffer> m_framebuffers{};
 		VkCommandPool m_commandPool{};
 		VkImage m_depthImage{};
 		VkDeviceMemory m_depthImageMem{};
 		VkImageView m_depthImageView{};
-		GameObject* m_go;
-		std::vector<UniformBuffer*> m_uniformBuffers{};
-		VkDescriptorPool m_descriptorPool{};
-		std::vector<VkDescriptorSet> m_descriptorSets{};
+		GameObject* m_go{};
+		Shader* m_shader{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		std::vector<VkSemaphore> m_imageAvailableSemaphores{};
@@ -186,13 +153,6 @@ namespace abc
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 		void CreateImageViews();
-		void CreateRenderPass();
-		void CreateDescriptorSetLayout();
-		void CreateDescriptorPool();
-		void CreateDescriptorSets();
-		void CreatePipeline();
-		VkShaderModule CreateShaderModule(const std::vector<char>& code);
-		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateSyncObjects();
 
@@ -200,29 +160,12 @@ namespace abc
 		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice);
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiliing, VkFormatFeatureFlags features);
-		VkFormat FindDepthFormat();
 		const bool HasStencilComponent(VkFormat format) const { return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT; }
 
 		void RecreateSwapchain();
 		void CleanupSwapchain();
-
-		void RecordCommandBuffer(VkCommandBuffer, uint32_t imageIndex);
 	};
 
 #define RENDERER (GraphicsRenderer::GetInstance())
-}
-
-namespace std
-{
-	template<>
-	struct hash<abc::Vertex>
-	{
-		size_t operator()(abc::Vertex const& vertex) const
-		{
-			return ((hash<glm::vec3>()(vertex.pos) ^
-					 (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.uv) << 1);
-		}
-	};
 }
 
