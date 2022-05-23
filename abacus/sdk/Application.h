@@ -43,6 +43,8 @@ namespace abc
 		Application();
 		static Application* st_instance;
 
+		void HandleInputSystem();
+
 		Window* m_activeWindow{};
 		bool m_running = false;
 	};

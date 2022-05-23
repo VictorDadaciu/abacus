@@ -2,6 +2,8 @@
 #include "GameObject.h"
 
 #include "RenderComponent.h"
+#include "TransformComponent.h"
+#include "CameraComponent.h"
 
 namespace abc
 {
@@ -24,6 +26,30 @@ namespace abc
 			if (component->type == ComponentType::RENDER)
 			{
 				return static_cast<RenderComponent*>(component);
+			}
+		}
+		return nullptr;
+	}
+
+	TransformComponent* GameObject::GetTransformComponent()
+	{
+		for (auto component : m_components)
+		{
+			if (component->type == ComponentType::TRANSFORM)
+			{
+				return static_cast<TransformComponent*>(component);
+			}
+		}
+		return nullptr;
+	}
+
+	CameraComponent* GameObject::GetCameraComponent()
+	{
+		for (auto component : m_components)
+		{
+			if (component->type == ComponentType::CAMERA)
+			{
+				return static_cast<CameraComponent*>(component);
 			}
 		}
 		return nullptr;

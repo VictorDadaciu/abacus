@@ -74,10 +74,12 @@ namespace abc
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		void CreateColorResources();
 		void CreateDepthResources();
-		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
-		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem);
-		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
+		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem, uint32_t mipLevels, VkSampleCountFlagBits numSamples);
+		void GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
 		void CreateCommandBuffers();
 		VkCommandBuffer BeginSingleTimeCommands();
 		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -85,7 +87,9 @@ namespace abc
 		const Device& GetDevice() const { return m_device; }
 		const Swapchain& GetSwapchain() const { return m_swapchain; }
 		const VkImageView& GetDepthImageView() const { return m_depthImageView; }
+		const VkImageView& GetColorImageView() const { return m_colorImageView; }
 		const VkCommandPool& GetCommandPool() const { return m_commandPool; }
+		const VkSampleCountFlagBits GetMSAASamples() const { return m_msaaSamples; }
 
 		const bool AreValidationLayersEnabled() const { return m_enableValidationLayers; }
 
@@ -124,8 +128,13 @@ namespace abc
 		VkImage m_depthImage{};
 		VkDeviceMemory m_depthImageMem{};
 		VkImageView m_depthImageView{};
+		VkImage m_colorImage{};
+		VkDeviceMemory m_colorImageMem{};
+		VkImageView m_colorImageView{};
 		GameObject* m_go{};
+		GameObject* m_cam{};
 		Shader* m_shader{};
+		VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		std::vector<VkSemaphore> m_imageAvailableSemaphores{};
@@ -149,6 +158,7 @@ namespace abc
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
 		void CreateLogicalDevice();
 		void CreateSwapchain();
+		VkSampleCountFlagBits  GetMaxUsableSampleCount();
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);

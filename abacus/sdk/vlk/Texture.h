@@ -22,6 +22,7 @@ namespace abc
 		VkDeviceMemory m_mem{};
 		VkImageView m_view{};
 		VkSampler m_sampler{};
+		uint32_t m_mipLevels{};
 
 		void CreateImage(const std::string& texurePath);
 		void CreateImageView();

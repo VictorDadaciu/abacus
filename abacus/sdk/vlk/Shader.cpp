@@ -5,6 +5,8 @@
 #include "FileReader.h"
 #include "GameObject.h"
 #include "RenderComponent.h"
+#include "TransformComponent.h"
+#include "CameraComponent.h"
 #include "Model.h"
 #include "Texture.h"
 
@@ -17,6 +19,7 @@ namespace abc
 		CreatePipeline();
 		CreateFramebuffers();
 		CreateDescriptorPool();
+		m_secondaryCommandBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 	}
 
 	Shader::~Shader()
@@ -56,13 +59,13 @@ namespace abc
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = RENDERER->GetSwapchain().imageFormat;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.samples = RENDERER->GetMSAASamples();
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0;
@@ -70,7 +73,7 @@ namespace abc
 
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = RENDERER->FindDepthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.samples = RENDERER->GetMSAASamples();
 		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -81,6 +84,20 @@ namespace abc
 		VkAttachmentReference depthAttachmentRef{};
 		depthAttachmentRef.attachment = 1;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription colorAttachmentResolve{};
+		colorAttachmentResolve.format = RENDERER->GetSwapchain().imageFormat;
+		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorAttachmentResolveRef{};
+		colorAttachmentResolveRef.attachment = 2;
+		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -95,8 +112,9 @@ namespace abc
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		subpass.pResolveAttachments = &colorAttachmentResolveRef;
 
-		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+		std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -187,12 +205,9 @@ namespace abc
 
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.minSampleShading = 1.0f; // Optional
-		multisampling.pSampleMask = nullptr; // Optional
-		multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
-		multisampling.alphaToOneEnable = VK_FALSE; // Optional
+		multisampling.sampleShadingEnable = VK_TRUE;
+		multisampling.minSampleShading = 0.2f;
+		multisampling.rasterizationSamples = RENDERER->GetMSAASamples();
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -311,9 +326,10 @@ namespace abc
 		m_framebuffers.resize(RENDERER->GetSwapchain().imageViews.size());
 		for (size_t i = 0; i < m_framebuffers.size(); i++)
 		{
-			std::array<VkImageView, 2> attachments = {
+			std::array<VkImageView, 3> attachments = {
+				RENDERER->GetColorImageView(),
+				RENDERER->GetDepthImageView(),
 				RENDERER->GetSwapchain().imageViews[i],
-				RENDERER->GetDepthImageView()
 			};
 
 			VkFramebufferCreateInfo framebufferInfo{};
@@ -376,7 +392,7 @@ namespace abc
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		poolInfo.maxSets = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT * 100);
 
 		if (vkCreateDescriptorPool(RENDERER->GetDevice().logical, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
@@ -395,7 +411,6 @@ namespace abc
 			bufferInfo.buffer = renderComponent->GetModel()->GetUniformBufferRaw(i);
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
-
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -428,8 +443,6 @@ namespace abc
 	{
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0; // Optional
-		beginInfo.pInheritanceInfo = nullptr; // Optional
 
 		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
 		{
@@ -460,43 +473,74 @@ namespace abc
 		}
 	}
 
+	void Shader::ResizeSecondaryCommandBufferMatrix(uint32_t imageIndex)
+	{
+		if (m_secondaryCommandBuffers[imageIndex].size() < m_gameObjects.size())
+		{
+			int objCount = m_gameObjects.size();
+			int bufferCount = m_secondaryCommandBuffers[imageIndex].size();
+			int toAdd = objCount - bufferCount;
+			m_secondaryCommandBuffers[imageIndex].resize(objCount);
+
+			VkCommandBufferAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+			allocInfo.commandPool = RENDERER->GetCommandPool();
+			allocInfo.commandBufferCount = static_cast<uint32_t>(toAdd);
+			vkAllocateCommandBuffers(RENDERER->GetDevice().logical, &allocInfo, m_secondaryCommandBuffers[imageIndex].data() + bufferCount);
+		}
+
+		if (m_secondaryCommandBuffers[imageIndex].size() > m_gameObjects.size())
+		{
+			int objCount = m_gameObjects.size();
+			int bufferCount = m_secondaryCommandBuffers[imageIndex].size();
+			int toFree = bufferCount - objCount;
+
+			vkFreeCommandBuffers(RENDERER->GetDevice().logical, RENDERER->GetCommandPool(), toFree, m_secondaryCommandBuffers[imageIndex].data() + bufferCount);
+			m_secondaryCommandBuffers[imageIndex].resize(objCount);
+		}
+	}
+
 	void Shader::RecordSecondaryCommandBuffers(const VkCommandBuffer& commandBuffer, uint32_t imageIndex)
 	{
-		std::vector<VkCommandBuffer> secondaryCommandBuffers(m_gameObjects.size());
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandPool = RENDERER->GetCommandPool();
-		allocInfo.commandBufferCount = static_cast<uint32_t>(secondaryCommandBuffers.size());
-		vkAllocateCommandBuffers(RENDERER->GetDevice().logical, &allocInfo, secondaryCommandBuffers.data());
+		ResizeSecondaryCommandBufferMatrix(imageIndex);
 
 		VkCommandBufferInheritanceInfo inheritanceInfo{};
 		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 		inheritanceInfo.framebuffer = m_framebuffers[imageIndex];
 		inheritanceInfo.renderPass = m_renderPass;
 
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		beginInfo.pInheritanceInfo = &inheritanceInfo;
+
 		for (int i = 0; i < m_gameObjects.size(); i++)
 		{
-			VkCommandBufferBeginInfo beginInfo{};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-			beginInfo.pInheritanceInfo = &inheritanceInfo;
-
 			RenderComponent* renderComponent = m_gameObjects[i]->GetRenderComponent();
+			TransformComponent* transform = m_gameObjects[i]->GetTransformComponent();
 
-			vkBeginCommandBuffer(secondaryCommandBuffers[i], &beginInfo);
-			vkCmdBindPipeline(secondaryCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pl);
+			CameraComponent::activeCamera->UpdateProjection();
+
+			UniformBuffer* ub = (UniformBuffer*)renderComponent->GetModel()->GetUniformBuffer(imageIndex);
+			ub->ubo.model = transform->GetMat();
+			ub->ubo.view = CameraComponent::activeCamera->view;
+			ub->ubo.proj = CameraComponent::activeCamera->proj;
+			ub->UpdateMemory();
+
+			vkBeginCommandBuffer(m_secondaryCommandBuffers[imageIndex][i], &beginInfo);
+			vkCmdBindPipeline(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pl);
 
 			VkBuffer vertexBuffers[] = { renderComponent->GetModel()->GetVertexBufferRaw() };
 			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(secondaryCommandBuffers[i], 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(secondaryCommandBuffers[i], renderComponent->GetModel()->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(secondaryCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.layout, 0, 1, &renderComponent->GetModel()->GetDescriptorSet(imageIndex), 0, nullptr);
-			vkCmdDrawIndexed(secondaryCommandBuffers[i], static_cast<uint32_t>(renderComponent->GetModel()->GetIndices().size()), 1, 0, 0, 0);
+			vkCmdBindVertexBuffers(m_secondaryCommandBuffers[imageIndex][i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(m_secondaryCommandBuffers[imageIndex][i], renderComponent->GetModel()->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindDescriptorSets(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.layout, 0, 1, &renderComponent->GetModel()->GetDescriptorSet(imageIndex), 0, nullptr);
+			vkCmdDrawIndexed(m_secondaryCommandBuffers[imageIndex][i], static_cast<uint32_t>(renderComponent->GetModel()->GetIndices().size()), 1, 0, 0, 0);
 
-			vkEndCommandBuffer(secondaryCommandBuffers[i]);
+			vkEndCommandBuffer(m_secondaryCommandBuffers[imageIndex][i]);
 		}
 
-		vkCmdExecuteCommands(commandBuffer, static_cast<uint32_t>(secondaryCommandBuffers.size()), secondaryCommandBuffers.data());
+		vkCmdExecuteCommands(commandBuffer, static_cast<uint32_t>(m_secondaryCommandBuffers[imageIndex].size()), m_secondaryCommandBuffers[imageIndex].data());
 	}
 }

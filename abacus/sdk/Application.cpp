@@ -2,6 +2,7 @@
 #include "Application.h"
 
 #include "GraphicsRenderer.h"
+#include "InputManager.h"
 
 namespace abc
 {
@@ -44,6 +45,7 @@ namespace abc
         m_activeWindow = new Window();
 
         m_running = true;
+        INPUT->Initialise();
         RENDERER->Initialise();
     }
 
@@ -51,23 +53,21 @@ namespace abc
     {
     }
 
+    void Application::HandleInputSystem()
+    {
+        INPUT->Update();
+
+        m_running = !INPUT->window.quit;
+        if (INPUT->window.resized)
+        {
+            RENDERER->WindowResized();
+        }
+    }
+
     void Application::Update()
     {
-        SDL_Event e;
-        while (SDL_PollEvent(&e))
-        {
-            if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
-            {
-                m_running = false;
-            }
-            else if (e.type == SDL_WINDOWEVENT)
-            {
-                if (e.window.event == SDL_WINDOWEVENT_RESIZED || e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-                {
-                    RENDERER->WindowResized();
-                }
-            }
-        }
+        HandleInputSystem();
+
         RENDERER->DrawFrame();
     }
 
@@ -75,6 +75,7 @@ namespace abc
     {
         RENDERER->WaitForDeviceToIdle();
         RENDERER->Destroy();
+        INPUT->Destroy();
 
         m_activeWindow->Close();
         delete m_activeWindow;

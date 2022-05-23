@@ -25,13 +25,6 @@ namespace abc
 		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv; }
 	};
 
-	struct UniformBufferObject
-	{
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-	};
-
 	class GameObject;
 	class Shader
 	{
@@ -58,6 +51,7 @@ namespace abc
 		VkDescriptorPool m_descriptorPool{};
 		VkRenderPass m_renderPass{};
 		std::vector<VkFramebuffer> m_framebuffers{};
+		std::vector<std::vector<VkCommandBuffer>> m_secondaryCommandBuffers{};
 
 		std::vector<GameObject*> m_gameObjects{};
 
@@ -67,6 +61,8 @@ namespace abc
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 		void CreateFramebuffers();
 		void CreateDescriptorPool();
+
+		void ResizeSecondaryCommandBufferMatrix(uint32_t imageIndex);
 
 		void RecordSecondaryCommandBuffers(const VkCommandBuffer& commandBuffer, uint32_t imageIndex);
 	};

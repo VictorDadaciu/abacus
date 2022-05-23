@@ -8,6 +8,8 @@
 namespace abc
 {
 	class RenderComponent;
+	class CameraComponent;
+	class TransformComponent;
 	class GameObject
 	{
 	public:
@@ -20,6 +22,8 @@ namespace abc
 		void AttachComponent(Component* component);
 
 		RenderComponent* GetRenderComponent();
+		CameraComponent* GetCameraComponent();
+		TransformComponent* GetTransformComponent();
 
 		void Destroy();
 

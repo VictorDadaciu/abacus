@@ -6,6 +6,8 @@
 #include "Buffer.h"
 #include "Component.h"
 #include "RenderComponent.h"
+#include "TransformComponent.h"
+#include "CameraComponent.h"
 #include "Texture.h"
 #include "Model.h"
 #include "Shader.h"
@@ -37,6 +39,7 @@ namespace abc
 		CreateSwapchain();
 		CreateImageViews();
 		CreateCommandPool();
+		CreateColorResources();
 		CreateDepthResources();
 		LoadModel();
 		CreateCommandBuffers();
@@ -110,6 +113,7 @@ namespace abc
 			if (IsPhysicalDeviceSuitable(device))
 			{
 				m_device.physical = device;
+				m_msaaSamples = GetMaxUsableSampleCount();
 				break;
 			}
 		}
@@ -177,6 +181,7 @@ namespace abc
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
+		deviceFeatures.sampleRateShading = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -288,8 +293,6 @@ namespace abc
 		else
 		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0; // Optional
-			createInfo.pQueueFamilyIndices = nullptr; // Optional
 		}
 		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -316,7 +319,7 @@ namespace abc
 
 		for (size_t i = 0; i < m_swapchain.images.size(); i++)
 		{
-			m_swapchain.imageViews[i] = CreateImageView(m_swapchain.images[i], m_swapchain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			m_swapchain.imageViews[i] = CreateImageView(m_swapchain.images[i], m_swapchain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
 	}
 
@@ -340,9 +343,14 @@ namespace abc
 		m_shader = new Shader("shd/triangle.vert", "shd/triangle.frag");
 
 		m_go = new GameObject();
+		m_go->AttachComponent(new TransformComponent(m_go));
 		m_go->AttachComponent(new RenderComponent(m_go, "res/mdl/viking_room.obj", "res/img/viking_room.png", m_shader));
-
+		TransformComponent* transform = m_go->GetTransformComponent();
 		m_shader->AddGameObject(m_go);
+
+		m_cam = new GameObject();
+		m_cam->AttachComponent(new TransformComponent(m_cam));
+		m_cam->AttachComponent(new CameraComponent(m_cam));
 	}
 
 	void GraphicsRenderer::CreateCommandBuffers()
@@ -504,16 +512,24 @@ namespace abc
 		EndSingleTimeCommands(commandBuffer);
 	}
 
+	void GraphicsRenderer::CreateColorResources()
+	{
+		VkFormat colorFormat = m_swapchain.imageFormat;
+
+		CreateImage(m_swapchain.extent.width, m_swapchain.extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colorImage, m_colorImageMem, 1, m_msaaSamples);
+		m_colorImageView = CreateImageView(m_colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
 	void GraphicsRenderer::CreateDepthResources()
 	{
 		VkFormat depthFormat = FindDepthFormat();
-		CreateImage(m_swapchain.extent.width, m_swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMem);
-		m_depthImageView = CreateImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		CreateImage(m_swapchain.extent.width, m_swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMem, 1, m_msaaSamples);
+		m_depthImageView = CreateImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-		TransitionImageLayout(m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		TransitionImageLayout(m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 	}
 
-	void GraphicsRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem)
+	void GraphicsRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem, uint32_t mipLevels, VkSampleCountFlagBits numSamples)
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -521,14 +537,14 @@ namespace abc
 		imageInfo.extent.width = width;
 		imageInfo.extent.height = height;
 		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
+		imageInfo.mipLevels = mipLevels;
 		imageInfo.arrayLayers = 1;
 		imageInfo.format = format;
 		imageInfo.tiling = tiling;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = usage;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.samples = numSamples;
 		imageInfo.flags = 0; // Optional
 
 		if (vkCreateImage(m_device.logical, &imageInfo, nullptr, &image) != VK_SUCCESS)
@@ -552,7 +568,96 @@ namespace abc
 		vkBindImageMemory(m_device.logical, image, imageMem, 0);
 	}
 
-	void GraphicsRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+	void GraphicsRenderer::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels)
+	{
+		// Check if image format supports linear blitting
+		VkFormatProperties formatProperties;
+		vkGetPhysicalDeviceFormatProperties(m_device.physical, imageFormat, &formatProperties);
+		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+		{
+			throw std::runtime_error("Texture image format does not support linear blitting!");
+		}
+
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+
+		VkImageMemoryBarrier barrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = image;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+
+		int32_t mipWidth = texWidth;
+		int32_t mipHeight = texHeight;
+
+		for (uint32_t i = 1; i < mipLevels; i++)
+		{
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+								 0, nullptr,
+								 0, nullptr,
+								 1, &barrier);
+
+			VkImageBlit blit{};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(commandBuffer,
+						   image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						   image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						   1, &blit,
+						   VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+								 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+								 0, nullptr,
+								 0, nullptr,
+								 1, &barrier);
+
+			if (mipWidth > 1) mipWidth /= 2;
+			if (mipHeight > 1) mipHeight /= 2;
+		}
+
+		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(commandBuffer,
+							 VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+							 0, nullptr,
+							 0, nullptr,
+							 1, &barrier);
+
+		EndSingleTimeCommands(commandBuffer);
+	}
+
+	void GraphicsRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels)
 	{
 		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 
@@ -565,7 +670,7 @@ namespace abc
 		barrier.image = image;
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.levelCount = mipLevels;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
@@ -655,7 +760,7 @@ namespace abc
 		EndSingleTimeCommands(commandBuffer);
 	}
 
-	VkImageView GraphicsRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+	VkImageView GraphicsRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -664,7 +769,7 @@ namespace abc
 		viewInfo.format = format;
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.levelCount = mipLevels;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
@@ -746,6 +851,22 @@ namespace abc
 		m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
+	VkSampleCountFlagBits  GraphicsRenderer::GetMaxUsableSampleCount()
+	{
+		VkPhysicalDeviceProperties physicalDeviceProperties;
+		vkGetPhysicalDeviceProperties(m_device.physical, &physicalDeviceProperties);
+
+		VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+		if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+		if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+		if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+		if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+		if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+		if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+
+		return VK_SAMPLE_COUNT_1_BIT;
+	}
+
 	void GraphicsRenderer::WaitForDeviceToIdle()
 	{
 		vkDeviceWaitIdle(m_device.logical);
@@ -765,12 +886,17 @@ namespace abc
 
 		CreateSwapchain();
 		CreateImageViews();
-		m_shader->SwapchainRecreation();
+		CreateColorResources();
 		CreateDepthResources();
+		m_shader->SwapchainRecreation();
 	}
 
 	void GraphicsRenderer::CleanupSwapchain()
 	{
+		vkDestroyImageView(m_device.logical, m_colorImageView, nullptr);
+		vkDestroyImage(m_device.logical, m_colorImage, nullptr);
+		vkFreeMemory(m_device.logical, m_colorImageMem, nullptr);
+
 		vkDestroyImageView(m_device.logical, m_depthImageView, nullptr);
 		vkDestroyImage(m_device.logical, m_depthImage, nullptr);
 		vkFreeMemory(m_device.logical, m_depthImageMem, nullptr);

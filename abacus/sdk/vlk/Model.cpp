@@ -97,23 +97,10 @@ namespace abc
 
 	void Model::CreateUniformBuffers()
 	{
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-        UniformBufferObject ubo{};
-        ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), RENDERER->GetSwapchain().extent.width / (float)RENDERER->GetSwapchain().extent.height, 0.1f, 1000.0f);
-        ubo.proj[1][1] *= -1;
-
 		m_uniformBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 		for (size_t i = 0; i < m_uniformBuffers.size(); i++)
 		{
 			m_uniformBuffers[i] = new UniformBuffer();
-
-            void* data;
-            vkMapMemory(RENDERER->GetDevice().logical, m_uniformBuffers[i]->GetBufferMemory(), 0, sizeof(ubo), 0, &data);
-            memcpy(data, &ubo, sizeof(ubo));
-            vkUnmapMemory(RENDERER->GetDevice().logical, m_uniformBuffers[i]->GetBufferMemory());
 		}
 	}
 
