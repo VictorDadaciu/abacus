@@ -14,6 +14,8 @@ namespace abc
 {
 	Shader::Shader(const std::string& vertPath, const std::string& fragPath)
 	{
+		CreateColorResources();
+		CreateDepthResources();
 		CreateRenderPass();
 		CreateDescriptorSetLayout();
 		CreatePipeline();
@@ -28,6 +30,14 @@ namespace abc
 
 	void Shader::SwapchainCleanup()
 	{
+		vkDestroyImageView(RENDERER->GetDevice().logical, m_colorImageView, nullptr);
+		vkDestroyImage(RENDERER->GetDevice().logical, m_colorImage, nullptr);
+		vkFreeMemory(RENDERER->GetDevice().logical, m_colorImageMem, nullptr);
+
+		vkDestroyImageView(RENDERER->GetDevice().logical, m_depthImageView, nullptr);
+		vkDestroyImage(RENDERER->GetDevice().logical, m_depthImage, nullptr);
+		vkFreeMemory(RENDERER->GetDevice().logical, m_depthImageMem, nullptr);
+
 		for (int i = 0; i < m_framebuffers.size(); i++)
 		{
 			vkDestroyFramebuffer(RENDERER->GetDevice().logical, m_framebuffers[i], nullptr);
@@ -43,6 +53,8 @@ namespace abc
 
 	void Shader::SwapchainRecreation()
 	{
+		CreateColorResources();
+		CreateDepthResources();
 		CreateRenderPass();
 		CreatePipeline();
 		CreateFramebuffers();
@@ -327,8 +339,8 @@ namespace abc
 		for (size_t i = 0; i < m_framebuffers.size(); i++)
 		{
 			std::array<VkImageView, 3> attachments = {
-				RENDERER->GetColorImageView(),
-				RENDERER->GetDepthImageView(),
+				m_colorImageView,
+				m_depthImageView,
 				RENDERER->GetSwapchain().imageViews[i],
 			};
 
@@ -437,6 +449,23 @@ namespace abc
 
 			vkUpdateDescriptorSets(RENDERER->GetDevice().logical, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
+	}
+
+	void Shader::CreateColorResources()
+	{
+		VkFormat colorFormat = RENDERER->GetSwapchain().imageFormat;
+
+		RENDERER->CreateImage(RENDERER->GetSwapchain().extent.width, RENDERER->GetSwapchain().extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colorImage, m_colorImageMem, 1, RENDERER->GetMSAASamples());
+		m_colorImageView = RENDERER->CreateImageView(m_colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
+	void Shader::CreateDepthResources()
+	{
+		VkFormat depthFormat = RENDERER->FindDepthFormat();
+		RENDERER->CreateImage(RENDERER->GetSwapchain().extent.width, RENDERER->GetSwapchain().extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMem, 1, RENDERER->GetMSAASamples());
+		m_depthImageView = RENDERER->CreateImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+
+		RENDERER->TransitionImageLayout(m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 	}
 
 	void Shader::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)

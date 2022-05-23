@@ -52,6 +52,12 @@ namespace abc
 		VkRenderPass m_renderPass{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		std::vector<std::vector<VkCommandBuffer>> m_secondaryCommandBuffers{};
+		VkImage m_depthImage{};
+		VkDeviceMemory m_depthImageMem{};
+		VkImageView m_depthImageView{};
+		VkImage m_colorImage{};
+		VkDeviceMemory m_colorImageMem{};
+		VkImageView m_colorImageView{};
 
 		std::vector<GameObject*> m_gameObjects{};
 
@@ -61,6 +67,8 @@ namespace abc
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 		void CreateFramebuffers();
 		void CreateDescriptorPool();
+		void CreateColorResources();
+		void CreateDepthResources();
 
 		void ResizeSecondaryCommandBufferMatrix(uint32_t imageIndex);
 

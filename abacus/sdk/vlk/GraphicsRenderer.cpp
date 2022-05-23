@@ -39,8 +39,6 @@ namespace abc
 		CreateSwapchain();
 		CreateImageViews();
 		CreateCommandPool();
-		CreateColorResources();
-		CreateDepthResources();
 		LoadModel();
 		CreateCommandBuffers();
 		CreateSyncObjects();
@@ -512,23 +510,6 @@ namespace abc
 		EndSingleTimeCommands(commandBuffer);
 	}
 
-	void GraphicsRenderer::CreateColorResources()
-	{
-		VkFormat colorFormat = m_swapchain.imageFormat;
-
-		CreateImage(m_swapchain.extent.width, m_swapchain.extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_colorImage, m_colorImageMem, 1, m_msaaSamples);
-		m_colorImageView = CreateImageView(m_colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	}
-
-	void GraphicsRenderer::CreateDepthResources()
-	{
-		VkFormat depthFormat = FindDepthFormat();
-		CreateImage(m_swapchain.extent.width, m_swapchain.extent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage, m_depthImageMem, 1, m_msaaSamples);
-		m_depthImageView = CreateImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
-		TransitionImageLayout(m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
-	}
-
 	void GraphicsRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMem, uint32_t mipLevels, VkSampleCountFlagBits numSamples)
 	{
 		VkImageCreateInfo imageInfo{};
@@ -886,21 +867,11 @@ namespace abc
 
 		CreateSwapchain();
 		CreateImageViews();
-		CreateColorResources();
-		CreateDepthResources();
 		m_shader->SwapchainRecreation();
 	}
 
 	void GraphicsRenderer::CleanupSwapchain()
 	{
-		vkDestroyImageView(m_device.logical, m_colorImageView, nullptr);
-		vkDestroyImage(m_device.logical, m_colorImage, nullptr);
-		vkFreeMemory(m_device.logical, m_colorImageMem, nullptr);
-
-		vkDestroyImageView(m_device.logical, m_depthImageView, nullptr);
-		vkDestroyImage(m_device.logical, m_depthImage, nullptr);
-		vkFreeMemory(m_device.logical, m_depthImageMem, nullptr);
-
 		m_shader->SwapchainCleanup();
 
 		for (auto imageView : m_swapchain.imageViews)

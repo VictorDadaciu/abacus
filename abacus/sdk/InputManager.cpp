@@ -37,7 +37,7 @@ namespace abc
 		{
 			if (e.type == SDL_QUIT)
 			{
-				window.quit = false;
+				window.quit = true;
 			}
 			
 			if (e.type == SDL_WINDOWEVENT)
