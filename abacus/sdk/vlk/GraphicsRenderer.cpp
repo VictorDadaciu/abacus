@@ -14,8 +14,6 @@
 
 #include "FileReader.h"
 
-#include <chrono>
-
 namespace abc
 {
 	GraphicsRenderer* GraphicsRenderer::st_instance = nullptr;
@@ -342,8 +340,7 @@ namespace abc
 
 		m_go = new GameObject();
 		m_go->AttachComponent(new TransformComponent(m_go));
-		m_go->AttachComponent(new RenderComponent(m_go, "res/mdl/viking_room.obj", "res/img/viking_room.png", m_shader));
-		TransformComponent* transform = m_go->GetTransformComponent();
+		m_go->AttachComponent(new RenderComponent(m_go, "res/mdl/column.obj", "res/img/column.jpg", m_shader));
 		m_shader->AddGameObject(m_go);
 
 		m_cam = new GameObject();

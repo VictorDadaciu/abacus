@@ -18,13 +18,14 @@ namespace abc
 	{
 		glm::vec3 pos;
 		glm::vec3 color;
+		glm::vec3 norm;
 		glm::vec2 uv;
 
 		static VkVertexInputBindingDescription GetBindingDescription();
-		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
-		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv; }
+		static std::array<VkVertexInputAttributeDescription, 4> GetAttributeDescriptions();
+		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv && norm == other.norm; }
 	};
-
+	 
 	class GameObject;
 	class Shader
 	{

@@ -17,9 +17,7 @@ namespace std
     {
         size_t operator()(abc::Vertex const& vertex) const
         {
-            return ((hash<glm::vec3>()(vertex.pos) ^
-                     (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-                (hash<glm::vec2>()(vertex.uv) << 1);
+            return (((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec3>()(vertex.norm) << 1) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1);
         }
     };
 }
@@ -51,6 +49,12 @@ namespace abc
                     attrib.vertices[3 * index.vertex_index + 0],
                     attrib.vertices[3 * index.vertex_index + 1],
                     attrib.vertices[3 * index.vertex_index + 2],
+                };
+
+                vertex.norm = {
+                    attrib.normals[3 * index.normal_index + 0],
+                    attrib.normals[3 * index.normal_index + 1],
+                    attrib.normals[3 * index.normal_index + 2],
                 };
                 
                 vertex.uv = {

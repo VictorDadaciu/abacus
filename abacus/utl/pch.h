@@ -38,5 +38,6 @@
 #include <fstream>
 #include <array>
 #include <unordered_map>
+#include <chrono>
 
 #endif //PCH_H

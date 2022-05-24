@@ -9,6 +9,7 @@
 #include "CameraComponent.h"
 #include "Model.h"
 #include "Texture.h"
+#include "InputManager.h"
 
 namespace abc
 {
@@ -206,7 +207,7 @@ namespace abc
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL; 
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -370,9 +371,9 @@ namespace abc
 		return bindingDescription;
 	}
 
-	std::array<VkVertexInputAttributeDescription, 3> Vertex::GetAttributeDescriptions()
+	std::array<VkVertexInputAttributeDescription, 4> Vertex::GetAttributeDescriptions()
 	{
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
@@ -386,8 +387,13 @@ namespace abc
 
 		attributeDescriptions[2].binding = 0;
 		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[2].offset = offsetof(Vertex, uv);
+		attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(Vertex, norm);
+
+		attributeDescriptions[3].binding = 0;
+		attributeDescriptions[3].location = 3;
+		attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[3].offset = offsetof(Vertex, uv);
 
 		return attributeDescriptions;
 	}
@@ -539,22 +545,31 @@ namespace abc
 		inheritanceInfo.framebuffer = m_framebuffers[imageIndex];
 		inheritanceInfo.renderPass = m_renderPass;
 
-		VkCommandBufferBeginInfo beginInfo{};
+		VkCommandBufferBeginInfo beginInfo{}; 
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
+		static float angleY = 0.f;
+		static auto lastFrame = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastFrame).count();
+		lastFrame = currentTime;
 		for (int i = 0; i < m_gameObjects.size(); i++)
 		{
 			RenderComponent* renderComponent = m_gameObjects[i]->GetRenderComponent();
 			TransformComponent* transform = m_gameObjects[i]->GetTransformComponent();
 
+			angleY += 90.f * time * (INPUT->keyboard.keys[SDLK_d].pressed - INPUT->keyboard.keys[SDLK_a].pressed);
+			transform->Rotate(angleY, glm::vec3(0.f, 1.f, 0.f));
+
 			CameraComponent::activeCamera->UpdateProjection();
 
 			UniformBuffer* ub = (UniformBuffer*)renderComponent->GetModel()->GetUniformBuffer(imageIndex);
 			ub->ubo.model = transform->GetMat();
-			ub->ubo.view = CameraComponent::activeCamera->view;
-			ub->ubo.proj = CameraComponent::activeCamera->proj;
+			ub->ubo.pvm = CameraComponent::activeCamera->proj * CameraComponent::activeCamera->view * ub->ubo.model;
+			ub->ubo.normal = glm::transpose(glm::inverse(ub->ubo.model));
 			ub->UpdateMemory();
 
 			vkBeginCommandBuffer(m_secondaryCommandBuffers[imageIndex][i], &beginInfo);

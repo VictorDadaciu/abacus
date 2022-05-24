@@ -15,7 +15,7 @@ namespace abc
 			activeCamera = this;
 		}
 
-		view = glm::lookAt(glm::vec3(2.0f, 2.f, 2.f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		view = glm::lookAt(glm::vec3(5.f, 5.f, 5.f), glm::vec3(0.0f, 3.f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		UpdateProjection();
 	}
 

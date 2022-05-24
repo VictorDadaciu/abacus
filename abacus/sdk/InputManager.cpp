@@ -50,10 +50,22 @@ namespace abc
 
 			if (e.type == SDL_KEYDOWN) 
 			{
-				if (e.key.keysym.sym == SDLK_ESCAPE)
+				SDL_Keycode code = e.key.keysym.sym;
+				if (code == SDLK_ESCAPE)
 				{
 					window.quit = true;
 				}
+
+				keyboard.keys[code].justPressed = true;
+				keyboard.keys[code].pressed = true;
+			}
+
+			if (e.type == SDL_KEYUP) 
+			{
+				SDL_Keycode code = e.key.keysym.sym;
+
+				keyboard.keys[code].justReleased = true;
+				keyboard.keys[code].pressed = false;
 			}
 		}
 	}
@@ -62,6 +74,15 @@ namespace abc
 	{
 		quit = false;
 		resized = false;
+	}
+
+	void KeyboardEvents::Clear()
+	{
+		for (auto& key : keys)
+		{
+			key.second.justPressed = false;
+			key.second.justReleased = false;
+		}
 	}
 
 	void InputManager::Destroy()

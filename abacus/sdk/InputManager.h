@@ -10,6 +10,20 @@ namespace abc
 		void Clear();
 	};
 
+	struct Keys
+	{
+		bool justPressed{};
+		bool pressed{};
+		bool justReleased{};
+	};
+
+	struct KeyboardEvents
+	{
+		std::unordered_map<SDL_Keycode, Keys> keys{};
+
+		void Clear();
+	};
+
 	class InputManager
 	{
 	public:
@@ -22,6 +36,7 @@ namespace abc
 		void Destroy();
 
 		WindowEvents window{};
+		KeyboardEvents keyboard{};
 
 	private:
 		InputManager();

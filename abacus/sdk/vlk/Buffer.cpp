@@ -85,12 +85,12 @@ namespace abc
 	UniformBuffer::~UniformBuffer()
 	{
 	}
-
+	 
 	void UniformBuffer::UpdateMemory()
-	{
+	{ 
 		void* data;
-		vkMapMemory(RENDERER->GetDevice().logical, m_mem, 0, sizeof(ubo), 0, &data);
+		vkMapMemory(RENDERER->GetDevice().logical, m_mem, 0, sizeof(ubo), 0, &data);  
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);
-	}
-}
+		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);   
+	} 
+} 
