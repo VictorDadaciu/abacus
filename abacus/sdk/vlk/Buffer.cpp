@@ -44,53 +44,52 @@ namespace abc
 
 	VertexBuffer::~VertexBuffer()
 	{
-	}
+	} 
 
 	IndexBuffer::IndexBuffer(const std::vector<uint32_t>& indices)
 	{
 		m_type = BufferType::INDEX;
+		 
+		VkBuffer stagingBuffer{};   
+		VkDeviceMemory stagingMemory{}; 
 
-		VkBuffer stagingBuffer{};
-		VkDeviceMemory stagingMemory{};
-
-		VkDeviceSize bufferSize;
-		bufferSize = sizeof(indices[0]) * indices.size();
+		VkDeviceSize bufferSize; 
+		bufferSize = sizeof(indices[0]) * indices.size();    
 
 		RENDERER->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
-
+		  
 		void* data;
 		vkMapMemory(RENDERER->GetDevice().logical, stagingMemory, 0, bufferSize, 0, &data);
 		memcpy(data, indices.data(), (size_t)bufferSize);
 		vkUnmapMemory(RENDERER->GetDevice().logical, stagingMemory);
-
+		 
 		RENDERER->CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_data, m_mem);
-		RENDERER->CopyBuffer(stagingBuffer, m_data, bufferSize);
+		RENDERER->CopyBuffer(stagingBuffer, m_data, bufferSize); 
 
 		vkDestroyBuffer(RENDERER->GetDevice().logical, stagingBuffer, nullptr);
 		vkFreeMemory(RENDERER->GetDevice().logical, stagingMemory, nullptr);
 	}
-
+ 
 	IndexBuffer::~IndexBuffer()
 	{
 	}
 
-	UniformBuffer::UniformBuffer()
-	{
-		m_type = BufferType::UNIFORM;  
+	UniformBuffer::UniformBuffer(VkDeviceSize size)
+	{ 
+		m_type = BufferType::UNIFORM;   
 
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-		RENDERER->CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_data, m_mem);
+		RENDERER->CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_data, m_mem);
 	}
 
 	UniformBuffer::~UniformBuffer()
-	{
+	{ 
 	}
 	 
-	void UniformBuffer::UpdateMemory()
-	{ 
+	void UniformBuffer::UpdateMemory(void* ubo, VkDeviceSize size)
+	{  
 		void* data;
-		vkMapMemory(RENDERER->GetDevice().logical, m_mem, 0, sizeof(ubo), 0, &data);  
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);
+		vkMapMemory(RENDERER->GetDevice().logical, m_mem, 0, size, 0, &data);   
+		memcpy(data, ubo, size);    
+		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);  
 	} 
 } 

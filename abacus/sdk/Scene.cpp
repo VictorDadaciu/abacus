@@ -166,9 +166,10 @@ namespace abc
 		float up = INPUT->keyboard.keys[SDLK_SPACE].pressed - INPUT->keyboard.keys[SDLK_LCTRL].pressed;
 
 		TransformComponent* camParent = CameraComponent::activeCamera->gameObject->GetParent()->GetTransformComponent();
-		camParent->Rotate(glm::vec3(0, glm::radians(90.f) * time * (-INPUT->mouse.dx), 0));
+		camParent->Rotate(glm::vec3(0, glm::radians(150.f) * time * (-INPUT->mouse.dx), 0));
+
 		TransformComponent* camTransform = CameraComponent::activeCamera->gameObject->GetTransformComponent();
-		camTransform->Rotate(glm::vec3(glm::radians(90.f) * time * (INPUT->mouse.dy), 0, 0));
+		camTransform->Rotate(glm::vec3(glm::radians(180.f) * time * (INPUT->mouse.dy), 0, 0));
 
 		camParent->Translate(5.0f * time * (forward * camParent->GetForward() + right * camParent->GetRight() + up * camParent->GetUp()));
 
@@ -177,6 +178,11 @@ namespace abc
 
 		for (auto root : m_rootObjects)
 		{
+			if (root->GetName() == "statue_parent")
+			{
+				root->GetTransformComponent()->Rotate(glm::vec3(0, glm::radians(90.f) * time * (INPUT->keyboard.keys[SDLK_q].pressed - INPUT->keyboard.keys[SDLK_e].pressed), 0));
+			}
+
 			root->GetTransformComponent()->UpdateMats();
 		}
 

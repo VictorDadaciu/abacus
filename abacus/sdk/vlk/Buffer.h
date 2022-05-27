@@ -22,6 +22,12 @@ namespace abc
 		alignas(16) glm::mat4 normal;
 	};
 
+	struct CameraUBO
+	{
+		alignas(4) float time;
+		alignas(16) glm::vec3 pos; 
+	};
+
 	class Buffer
 	{
 	public:
@@ -58,12 +64,10 @@ namespace abc
 	class UniformBuffer : public Buffer
 	{
 	public:
-		UniformBuffer();
+		UniformBuffer(VkDeviceSize size);
 		~UniformBuffer();
 
-		void UpdateMemory();
-
-		UniformBufferObject ubo{};
+		void UpdateMemory(void* ubo, VkDeviceSize size);
 	};
 }
 

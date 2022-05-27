@@ -104,7 +104,7 @@ namespace abc
 		m_uniformBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 		for (size_t i = 0; i < m_uniformBuffers.size(); i++)
 		{
-			m_uniformBuffers[i] = new UniformBuffer(); 
+			m_uniformBuffers[i] = new UniformBuffer(sizeof(UniformBufferObject)); 
 		}
 	}
 

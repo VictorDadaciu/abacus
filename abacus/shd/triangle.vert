@@ -6,7 +6,7 @@ layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec3 inNorm;
 layout(location = 3) in vec2 inUV;
 
-layout (binding = 0) uniform UniformBufferObject
+layout (set = 1, binding = 0) uniform UniformBufferObject
 {
 	mat4 pvm;
 	mat4 model;

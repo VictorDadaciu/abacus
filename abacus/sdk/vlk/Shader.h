@@ -26,6 +26,7 @@ namespace abc
 		bool operator==(const Vertex& other) const { return pos == other.pos && color == other.color && uv == other.uv && norm == other.norm; }
 	};
 	 
+	class UniformBuffer;
 	class GameObject;
 	class Shader
 	{
@@ -53,11 +54,14 @@ namespace abc
 
 		Pipeline m_pipeline{};
 		VkDescriptorSetLayout m_descriptorSetLayout{};
+		VkDescriptorSetLayout m_camSetLayout{};
+		std::vector<VkDescriptorSet> m_camDescriptorSets{};
+		std::vector<UniformBuffer*> m_camUniformBuffers{};
 		VkDescriptorPool m_descriptorPool{};
 		VkRenderPass m_renderPass{};
 		std::vector<VkFramebuffer> m_framebuffers{};
 		std::vector<std::vector<VkCommandBuffer>> m_secondaryCommandBuffers{};
-		VkImage m_depthImage{};
+		VkImage m_depthImage{}; 
 		VkDeviceMemory m_depthImageMem{};
 		VkImageView m_depthImageView{};
 		VkImage m_colorImage{};
@@ -72,6 +76,7 @@ namespace abc
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 		void CreateFramebuffers();
 		void CreateDescriptorPool();
+		void CreateCamDescriptorSets();
 		void CreateColorResources();
 		void CreateDepthResources();
 

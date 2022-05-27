@@ -10,6 +10,7 @@
 #include "Model.h"
 #include "Texture.h"
 #include "InputManager.h"
+#include "Buffer.h"
 
 namespace abc
 {
@@ -23,6 +24,7 @@ namespace abc
 		CreatePipeline();
 		CreateFramebuffers();
 		CreateDescriptorPool();
+		CreateCamDescriptorSets();
 		m_secondaryCommandBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 	}
 
@@ -66,7 +68,14 @@ namespace abc
 	{
 		vkDestroyDescriptorPool(RENDERER->GetDevice().logical, m_descriptorPool, nullptr);
 
+		for (size_t i = 0; i < m_camUniformBuffers.size(); i++)
+		{
+			m_camUniformBuffers[i]->Destroy();
+			delete m_camUniformBuffers[i];
+		}
+
 		vkDestroyDescriptorSetLayout(RENDERER->GetDevice().logical, m_descriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(RENDERER->GetDevice().logical, m_camSetLayout, nullptr);
 	}
 
 	void Shader::CreateRenderPass()
@@ -165,10 +174,6 @@ namespace abc
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
@@ -256,12 +261,12 @@ namespace abc
 		colorBlending.blendConstants[2] = 0.0f; // Optional
 		colorBlending.blendConstants[3] = 0.0f; // Optional
 
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {m_camSetLayout, m_descriptorSetLayout};
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1; // Optional
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout; // Optional
-		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
+		pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
 
 		if (vkCreatePipelineLayout(RENDERER->GetDevice().logical, &pipelineLayoutInfo, nullptr, &m_pipeline.layout) != VK_SUCCESS)
 		{
@@ -294,29 +299,50 @@ namespace abc
 
 	void Shader::CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
-
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(RENDERER->GetDevice().logical, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to create descriptor set layout!");
+			VkDescriptorSetLayoutBinding uboLayoutBinding{};
+			uboLayoutBinding.binding = 0;
+			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			uboLayoutBinding.descriptorCount = 1;
+			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+			VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+			samplerLayoutBinding.binding = 1;
+			samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			samplerLayoutBinding.descriptorCount = 1;
+			samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+			std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+			VkDescriptorSetLayoutCreateInfo layoutInfo{};
+			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+			layoutInfo.pBindings = bindings.data();
+
+			if (vkCreateDescriptorSetLayout(RENDERER->GetDevice().logical, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create descriptor set layout!");
+			}
+		}
+
+		{
+			VkDescriptorSetLayoutBinding uboLayoutBinding{};
+			uboLayoutBinding.binding = 0;
+			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			uboLayoutBinding.descriptorCount = 1;
+			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboLayoutBinding };
+			VkDescriptorSetLayoutCreateInfo layoutInfo{};
+			layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+			layoutInfo.pBindings = bindings.data();
+
+			if (vkCreateDescriptorSetLayout(RENDERER->GetDevice().logical, &layoutInfo, nullptr, &m_camSetLayout) != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create camera descriptor set layout!");
+			}
 		}
 	}
 
@@ -403,19 +429,58 @@ namespace abc
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT * 101);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT * 100);
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT * 100);
+		poolInfo.maxSets = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT * 101);
 
 		if (vkCreateDescriptorPool(RENDERER->GetDevice().logical, &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create descriptor pool!");
+		}
+	}
+
+	void Shader::CreateCamDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(RENDERER->MAX_FRAMES_IN_FLIGHT, m_camSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = m_descriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(RENDERER->MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_camDescriptorSets.resize(RENDERER->MAX_FRAMES_IN_FLIGHT); 
+		if (vkAllocateDescriptorSets(RENDERER->GetDevice().logical, &allocInfo, m_camDescriptorSets.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate camera descriptor sets!");
+		}
+
+		m_camUniformBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT); 
+		for (size_t i = 0; i < RENDERER->MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			m_camUniformBuffers[i] = new UniformBuffer(sizeof(CameraUBO));
+
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_camUniformBuffers[i]->GetBuffer();
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(CameraUBO);
+
+			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = m_camDescriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+			vkUpdateDescriptorSets(RENDERER->GetDevice().logical, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -551,25 +616,35 @@ namespace abc
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
+		static auto startTime = std::chrono::high_resolution_clock::now();
+		auto currentTime = std::chrono::high_resolution_clock::now();
+
+		CameraUBO camUBO{};
+		camUBO.pos = CameraComponent::activeCamera->gameObject->GetTransformComponent()->worldPos;
+		camUBO.time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		m_camUniformBuffers[imageIndex]->UpdateMemory(&camUBO, sizeof(CameraUBO));
+
 		for (int i = 0; i < m_gameObjects.size(); i++)
 		{
 			RenderComponent* renderComponent = m_gameObjects[i]->GetRenderComponent();
-			TransformComponent* transformComponent = m_gameObjects[i]->GetTransformComponent();
+			TransformComponent* transformComponent = m_gameObjects[i]->GetTransformComponent(); 
 
-			UniformBuffer* ub = (UniformBuffer*)renderComponent->GetModel()->GetUniformBuffer(imageIndex);
-			ub->ubo.model = transformComponent->mat;
-			ub->ubo.pvm = CameraComponent::activeCamera->proj * CameraComponent::activeCamera->view * ub->ubo.model;
-			ub->ubo.normal = glm::transpose(glm::inverse(ub->ubo.model));
-			ub->UpdateMemory();
+			UniformBufferObject ubo{};
+			ubo.model = transformComponent->mat;
+			ubo.pvm = CameraComponent::activeCamera->proj * CameraComponent::activeCamera->view * ubo.model;
+			ubo.normal = glm::transpose(glm::inverse(ubo.model));
+			renderComponent->GetModel()->GetUniformBuffer(imageIndex)->UpdateMemory(&ubo, sizeof(UniformBufferObject));
 
 			vkBeginCommandBuffer(m_secondaryCommandBuffers[imageIndex][i], &beginInfo);
 			vkCmdBindPipeline(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.pl);
 
-			VkBuffer vertexBuffers[] = { renderComponent->GetModel()->GetVertexBufferRaw() };
+			VkBuffer vertexBuffers[] = { renderComponent->GetModel()->GetVertexBufferRaw() }; 
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(m_secondaryCommandBuffers[imageIndex][i], 0, 1, vertexBuffers, offsets);
 			vkCmdBindIndexBuffer(m_secondaryCommandBuffers[imageIndex][i], renderComponent->GetModel()->GetIndexBufferRaw(), 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.layout, 0, 1, &renderComponent->GetModel()->GetDescriptorSet(imageIndex), 0, nullptr);
+
+			vkCmdBindDescriptorSets(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.layout, 0, 1, &m_camDescriptorSets[imageIndex], 0, nullptr);
+			vkCmdBindDescriptorSets(m_secondaryCommandBuffers[imageIndex][i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.layout, 1, 1, &renderComponent->GetModel()->GetDescriptorSet(imageIndex), 0, nullptr);
 			vkCmdDrawIndexed(m_secondaryCommandBuffers[imageIndex][i], static_cast<uint32_t>(renderComponent->GetModel()->GetIndices().size()), 1, 0, 0, 0);
 
 			vkEndCommandBuffer(m_secondaryCommandBuffers[imageIndex][i]);
