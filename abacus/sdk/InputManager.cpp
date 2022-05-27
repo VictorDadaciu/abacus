@@ -20,12 +20,15 @@ namespace abc
 
 	void InputManager::Initialise()
 	{
-
+		SDL_ShowCursor(SDL_DISABLE);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
 	}
 
 	void InputManager::ClearInputs()
 	{
 		window.Clear();
+		keyboard.Clear();
+		mouse.Clear();
 	}
 
 	void InputManager::Update()
@@ -67,6 +70,56 @@ namespace abc
 				keyboard.keys[code].justReleased = true;
 				keyboard.keys[code].pressed = false;
 			}
+
+			if (e.type == SDL_MOUSEBUTTONDOWN)
+			{
+				if (e.button.button == SDL_BUTTON_LEFT)
+				{
+					mouse.left.justPressed = true;
+					mouse.left.pressed = true;
+				}
+
+				if (e.button.button == SDL_BUTTON_RIGHT)
+				{
+					mouse.right.justPressed = true;
+					mouse.right.pressed = true;
+				}
+
+				if (e.button.button == SDL_BUTTON_MIDDLE)
+				{
+					mouse.middle.justPressed = true;
+					mouse.middle.pressed = true;
+				}
+			}
+
+			if (e.type == SDL_MOUSEBUTTONUP)
+			{
+				if (e.button.button == SDL_BUTTON_LEFT)
+				{
+					mouse.left.justReleased = true;
+					mouse.left.pressed = false;
+				}
+
+				if (e.button.button == SDL_BUTTON_RIGHT)
+				{
+					mouse.right.justReleased = true;
+					mouse.right.pressed = false;
+				}
+
+				if (e.button.button == SDL_BUTTON_MIDDLE)
+				{
+					mouse.middle.justReleased = true;
+					mouse.middle.pressed = false;
+				}
+			}
+
+			if (e.type == SDL_MOUSEMOTION)
+			{
+				mouse.x = e.motion.x;
+				mouse.y = e.motion.y;
+				mouse.dx = e.motion.xrel;
+				mouse.dy = e.motion.yrel;
+			}
 		}
 	}
 
@@ -83,6 +136,20 @@ namespace abc
 			key.second.justPressed = false;
 			key.second.justReleased = false;
 		}
+	}
+
+	void MouseEvents::Clear()
+	{
+		left.justPressed = false;
+		left.justReleased = false;
+		right.justPressed = false;
+		right.justReleased = false;
+		middle.justPressed = false;
+		middle.justReleased = false;
+
+		scroll = 0.f;
+		dx = 0.f;
+		dy = 0.f;
 	}
 
 	void InputManager::Destroy()

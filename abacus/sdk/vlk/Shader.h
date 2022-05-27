@@ -30,8 +30,10 @@ namespace abc
 	class Shader
 	{
 	public:
-		Shader(const std::string& vertPath, const std::string& fragPath);
+		Shader(const std::string& name, const std::string& vertPath, const std::string& fragPath);
 		~Shader();
+
+		const std::string& GetName() const { return m_name; }
 
 		const Pipeline& GetPipeline() const { return m_pipeline; }
 		const VkDescriptorSetLayout& GetDescriptorSetLayout() const { return m_descriptorSetLayout; }
@@ -47,6 +49,8 @@ namespace abc
 		void SwapchainRecreation();
 
 	protected:
+		std::string m_name;
+
 		Pipeline m_pipeline{};
 		VkDescriptorSetLayout m_descriptorSetLayout{};
 		VkDescriptorPool m_descriptorPool{};

@@ -1,0 +1,37 @@
+---
+sceneName: pbr
+gameObjects:
+  - gameObject:
+    name: camera_parent
+    transform: 
+      pos: [0, 1, -2]
+      rot: [0, 0, 0]
+      scale: [1, 1, 1]
+    parent: none
+  - gameObject:
+    name: camera
+    transform: 
+      pos: [0, 0, 0]
+      rot: [0, 0, 0]
+      scale: [1, 1, 1]
+    camera:
+      primary: yes
+    parent: camera_parent
+  - gameObject:
+    name: statue_parent
+    transform:
+      pos: [0, 0, 0]
+      rot: [0, 180, 0]
+      scale: [1, 1, 1]
+    parent: none
+  - gameObject: 
+    name: statue
+    transform:
+      pos: [0, 0, 0]
+      rot: [-90, 0, 0]
+      scale: [0.01, 0.01, 0.01]
+    render:
+      shader: pbr
+      model: res/mdl/statue.obj
+      tex: res/img/default.png
+    parent: statue_parent

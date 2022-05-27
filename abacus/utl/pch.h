@@ -18,7 +18,7 @@
 #define GLM_FORCE_EXPERIMENTAL
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-#include <gtx/quaternion.hpp>
+#include <gtx/euler_angles.hpp>
 #include <gtx/hash.hpp>
 
 //std

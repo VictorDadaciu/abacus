@@ -10,7 +10,7 @@ namespace abc
 		void Clear();
 	};
 
-	struct Keys
+	struct Button
 	{
 		bool justPressed{};
 		bool pressed{};
@@ -19,7 +19,23 @@ namespace abc
 
 	struct KeyboardEvents
 	{
-		std::unordered_map<SDL_Keycode, Keys> keys{};
+		std::unordered_map<SDL_Keycode, Button> keys{};
+
+		void Clear();
+	};
+
+	struct MouseEvents
+	{
+		Button right{};
+		Button left{};
+		Button middle{};
+
+		float scroll{};
+
+		float x{};
+		float y{};
+		float dx{};
+		float dy{};
 
 		void Clear();
 	};
@@ -37,6 +53,7 @@ namespace abc
 
 		WindowEvents window{};
 		KeyboardEvents keyboard{};
+		MouseEvents mouse{};
 
 	private:
 		InputManager();

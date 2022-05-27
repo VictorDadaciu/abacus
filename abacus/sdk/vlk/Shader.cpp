@@ -13,7 +13,8 @@
 
 namespace abc
 {
-	Shader::Shader(const std::string& vertPath, const std::string& fragPath)
+	Shader::Shader(const std::string& name, const std::string& vertPath, const std::string& fragPath) :
+		m_name(name)
 	{
 		CreateColorResources();
 		CreateDepthResources();
@@ -550,24 +551,13 @@ namespace abc
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 		beginInfo.pInheritanceInfo = &inheritanceInfo;
 
-		static float angleY = 0.f;
-		static auto lastFrame = std::chrono::high_resolution_clock::now();
-
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastFrame).count();
-		lastFrame = currentTime;
 		for (int i = 0; i < m_gameObjects.size(); i++)
 		{
 			RenderComponent* renderComponent = m_gameObjects[i]->GetRenderComponent();
-			TransformComponent* transform = m_gameObjects[i]->GetTransformComponent();
-
-			angleY += 90.f * time * (INPUT->keyboard.keys[SDLK_d].pressed - INPUT->keyboard.keys[SDLK_a].pressed);
-			transform->Rotate(angleY, glm::vec3(0.f, 1.f, 0.f));
-
-			CameraComponent::activeCamera->UpdateProjection();
+			TransformComponent* transformComponent = m_gameObjects[i]->GetTransformComponent();
 
 			UniformBuffer* ub = (UniformBuffer*)renderComponent->GetModel()->GetUniformBuffer(imageIndex);
-			ub->ubo.model = transform->GetMat();
+			ub->ubo.model = transformComponent->mat;
 			ub->ubo.pvm = CameraComponent::activeCamera->proj * CameraComponent::activeCamera->view * ub->ubo.model;
 			ub->ubo.normal = glm::transpose(glm::inverse(ub->ubo.model));
 			ub->UpdateMemory();

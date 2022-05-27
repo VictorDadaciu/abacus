@@ -11,6 +11,7 @@
 #include "Texture.h"
 #include "Model.h"
 #include "Shader.h"
+#include "Scene.h"
 
 #include "FileReader.h"
 
@@ -37,7 +38,7 @@ namespace abc
 		CreateSwapchain();
 		CreateImageViews();
 		CreateCommandPool();
-		LoadModel();
+		LoadScene("res/cfg/pbr.yaml");
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -334,18 +335,9 @@ namespace abc
 		}
 	}
 
-	void GraphicsRenderer::LoadModel()
+	void GraphicsRenderer::LoadScene(const std::string& path)
 	{
-		m_shader = new Shader("shd/triangle.vert", "shd/triangle.frag");
-
-		m_go = new GameObject();
-		m_go->AttachComponent(new TransformComponent(m_go));
-		m_go->AttachComponent(new RenderComponent(m_go, "res/mdl/column.obj", "res/img/column.jpg", m_shader));
-		m_shader->AddGameObject(m_go);
-
-		m_cam = new GameObject();
-		m_cam->AttachComponent(new TransformComponent(m_cam));
-		m_cam->AttachComponent(new CameraComponent(m_cam));
+		m_activeScene = new Scene(path);
 	}
 
 	void GraphicsRenderer::CreateCommandBuffers()
@@ -781,7 +773,7 @@ namespace abc
 
 		vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
 
-		m_shader->RecordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+		m_activeScene->Draw(m_commandBuffers[m_currentFrame], imageIndex);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -864,12 +856,12 @@ namespace abc
 
 		CreateSwapchain();
 		CreateImageViews();
-		m_shader->SwapchainRecreation();
+		m_activeScene->SwapchainRecreation();
 	}
 
 	void GraphicsRenderer::CleanupSwapchain()
 	{
-		m_shader->SwapchainCleanup();
+		m_activeScene->SwapchainCleanup();
 
 		for (auto imageView : m_swapchain.imageViews)
 		{
@@ -888,13 +880,10 @@ namespace abc
 			vkDestroyFence(m_device.logical, m_inFlightFences[i], nullptr);
 		}
 
-		m_go->Destroy();
-		delete m_go;
-
-		m_shader->Destroy();
 
 		vkDestroyCommandPool(m_device.logical, m_commandPool, nullptr);
 		CleanupSwapchain();
+		m_activeScene->Destroy();
 
 		vkDestroyDevice(m_device.logical, nullptr);
 

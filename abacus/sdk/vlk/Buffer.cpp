@@ -76,7 +76,7 @@ namespace abc
 
 	UniformBuffer::UniformBuffer()
 	{
-		m_type = BufferType::UNIFORM;
+		m_type = BufferType::UNIFORM;  
 
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 		RENDERER->CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_data, m_mem);
@@ -91,6 +91,6 @@ namespace abc
 		void* data;
 		vkMapMemory(RENDERER->GetDevice().logical, m_mem, 0, sizeof(ubo), 0, &data);  
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);   
+		vkUnmapMemory(RENDERER->GetDevice().logical, m_mem);
 	} 
 } 

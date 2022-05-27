@@ -98,13 +98,13 @@ namespace abc
     Model::~Model()
     {
     }
-
+     
 	void Model::CreateUniformBuffers()
 	{
 		m_uniformBuffers.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 		for (size_t i = 0; i < m_uniformBuffers.size(); i++)
 		{
-			m_uniformBuffers[i] = new UniformBuffer();
+			m_uniformBuffers[i] = new UniformBuffer(); 
 		}
 	}
 
@@ -120,7 +120,7 @@ namespace abc
 		m_descriptorSets.resize(RENDERER->MAX_FRAMES_IN_FLIGHT);
 		if (vkAllocateDescriptorSets(RENDERER->GetDevice().logical, &allocInfo, m_descriptorSets.data()) != VK_SUCCESS)
 		{
-			throw std::runtime_error("Failed to allocate descriptor sets!");
+			throw std::runtime_error("Failed to allocate descriptor sets!"); 
 		}
 	}
 }

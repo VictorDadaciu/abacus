@@ -19,6 +19,12 @@ namespace abc
 	{
 	}
 
+	void GameObject::SetParent(GameObject* parent) 
+	{ 
+		m_parent = parent; 
+		m_parent->AddChild(this); 
+	}
+
 	RenderComponent* GameObject::GetRenderComponent()
 	{
 		for (auto component : m_components)

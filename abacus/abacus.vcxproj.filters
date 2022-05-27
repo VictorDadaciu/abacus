@@ -65,6 +65,9 @@
     <ClCompile Include="sdk\InputManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="sdk\Scene.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utl\pch.h">
@@ -89,6 +92,7 @@
     <ClInclude Include="sdk\vlk\Texture.h" />
     <ClInclude Include="sdk\vlk\Shader.h" />
     <ClInclude Include="sdk\InputManager.h" />
+    <ClInclude Include="sdk\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shd\triangle.vert">
@@ -100,5 +104,6 @@
     <None Include="shd\spirv.bat">
       <Filter>src\shaders</Filter>
     </None>
+    <None Include="res\cfg\pbr.yaml" />
   </ItemGroup>
 </Project>

@@ -54,8 +54,7 @@ namespace abc
 		VkExtent2D extent{};
 	};
 
-	class GameObject;
-	class Shader;
+	class Scene;
 	class GraphicsRenderer
 	{
 	public:
@@ -69,7 +68,8 @@ namespace abc
 		void DrawFrame();
 		void WaitForDeviceToIdle();
 
-		void LoadModel();
+		void LoadScene(const std::string& path);
+
 		VkFormat FindDepthFormat();
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
@@ -121,9 +121,7 @@ namespace abc
 		Device m_device{};
 		Swapchain m_swapchain{};
 		VkCommandPool m_commandPool{};
-		GameObject* m_go{};
-		GameObject* m_cam{};
-		Shader* m_shader{};
+		Scene* m_activeScene{};
 		VkSampleCountFlagBits m_msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
